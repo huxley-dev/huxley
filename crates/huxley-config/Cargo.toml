@@ -1,0 +1,14 @@
+[package]
+name = "huxley-config"
+version.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+dotenvy = { workspace = true }
+envy = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }

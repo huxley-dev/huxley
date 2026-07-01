@@ -1,0 +1,13 @@
+[package]
+name = "huxley-state"
+version.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+huxley-config = { workspace = true }
+huxley-store = { workspace = true }

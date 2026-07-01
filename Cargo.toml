@@ -1,0 +1,50 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/huxley-api",
+    "crates/huxley-app",
+    "crates/huxley-config",
+    "crates/huxley-core",
+    "crates/huxley-engine",
+    "crates/huxley-state",
+    "crates/huxley-store",
+]
+
+[workspace.package]
+name = "huxley"
+version = "0.1.0-dev"
+edition = "2024"
+homepage = "https://huxley.dev"
+license = "MIT"
+repository = "https://github.com/huxley-dev/huxley"
+rust-version = "1.96.1"
+
+[workspace.dependencies]
+anyhow = { version = "1.0.102" }
+async-trait = { version = "0.1.89" }
+axum = { version = "0.8.9", features = ["macros"] }
+base64 = { version = "0.22.1" }
+chrono = { version = "0.4.45", features = ["serde"] }
+deadpool-redis = { version = "0.23.0", features = ["rt_tokio_1", "serde", "cluster"] }
+dotenvy = { version = "0.15.7" }
+envy = { version = "0.4.2" }
+redis = { version = "1.2.2", features = ["tokio-comp", "tokio-rustls-comp", "streams", "cluster", "cluster-async", "connection-manager", "uuid", "json"] }
+rust-embed = { version = "8.11.0" }
+rustls = { version = "0.23.40" }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = { version = "1.0.150" }
+sqlx = { version = "0.9.0", features = ["runtime-tokio", "tls-rustls", "postgres", "derive", "macros", "migrate", "uuid", "chrono", "json"] }
+testcontainers-modules = { version = "0.15.0", features = ["postgres", "redis"] }
+thiserror = { version = "2.0.18" }
+tokio = { version = "1.52.3", features = ["full"] }
+tokio-test = { version ="0.4.5" }
+tracing = { version = "0.1.44" }
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
+uuid = { version = "1.23.3", features = ["v7", "serde"] }
+huxley-api = { path = "crates/huxley-api" }
+huxley-app = { path = "crates/huxley-app" }
+huxley-config = { path = "crates/huxley-config" }
+huxley-core = { path = "crates/huxley-core" }
+huxley-engine = { path = "crates/huxley-engine" }
+huxley-state = { path = "/crates/huxley-state" }
+huxley-store = { path = "crates/huxley-store" }
