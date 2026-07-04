@@ -3,7 +3,7 @@ use sqlx::PgPool;
 use std::sync::Arc;
 
 use huxley_config::HuxleyConfig;
-use huxley_state::repos::*;
+use huxley_store::repos::*;
 
 pub struct HuxleyState {
     pub config: Arc<HuxleyConfig>,
@@ -20,6 +20,7 @@ pub struct HuxleyState {
     pub org_users_repo: Arc<dyn repos::OrgUsersRepository>,
     pub orgs_repo: Arc<dyn repos::OrgsRepository>,
     pub tags_repo: Arc<dyn repos::TagsRepository>,
+    pub workflow_projects_repo: Arc<dyn repos::WorkflowProjectsRepository>,
 }
 
 impl HuxleyState {
@@ -40,7 +41,8 @@ impl HuxleyState {
             org_roles_repo: Arc::new(repos::PgOrgRolesRepository),
             org_users_repo: Arc::new(repos::PgOrgUsersRepository),
             orgs_repo: Arc::new(repos::PgOrgsRepository),
-            tags_repo: Arc::new(repos::PgTagsRepository)
+            tags_repo: Arc::new(repos::PgTagsRepository),
+            workflow_projects_repo: Arc::new(repos::PgWorkflowProjectsRepo),
         }
     }
 }

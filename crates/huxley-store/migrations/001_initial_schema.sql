@@ -2,10 +2,11 @@
 -- 001: Initial schema
 -- ────────────────────────────────────────────────────────────────────────────
 
+CREATE EXTENSION IF NOT EXISTS "citext";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ─── Tags ───────────────────────────────────────────────────────────────────
-CREATE TABLE tags IF NOT EXISTS (
+CREATE TABLE "tags" IF NOT EXISTS (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     tag_type SMALLINT NOT NULL,
     name TEXT NOT NULL,
@@ -45,11 +46,8 @@ CREATE TABLE users IF NOT EXISTS (
     email TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     password TEXT NULL,
-    is_mfa_enabled BOOLEAN NOT NULL DEFAULT false,
-    mfa_secret BYTEA NULL,
-    mfa_recovery_codes BYTEA NULL,
-    mfa_recovery_codes_remaining SMALLINT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT true,
+    status TEXT NOT NULL DEFAULT 'active'
+        CHECK (status in ('active', 'disabled', 'locked')),
     preferences JSONB NOT NULL DEFAULT '{}'::jsonb,
     app_role_id UUID REFERENCES app_roles(id),
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
