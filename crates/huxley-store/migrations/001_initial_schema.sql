@@ -9,7 +9,8 @@ CREATE TABLE tags IF NOT EXISTS (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     tag_type SMALLINT NOT NULL,
     name TEXT NOT NULL,
-    color TEXT NOT NULL,
+    bg_color TEXT NOT NULL,
+    text_color TEXT NOT NULL,
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -221,7 +222,7 @@ CREATE TABLE org_credentials IF NOT EXISTS (
     UNIQUE (org_id, name),
 );
 
-CREATE INDEX idx_org_crfdentials_name on org_creentials (name);
+CREATE INDEX idx_org_credentials_name on org_credentials (name);
 CREATE INDEX idx_org_credentials_is_heritable ON org_variables (is_inheritable);
 
 -- ─── Workflow Projects ──────────────────────────────────────────────────────
@@ -231,6 +232,7 @@ CREATE TABLE workflow_projects IF NOT EXISTS (
     org_id UUID REFERENCES org(id) NULL,
     user_id UUID REFERENCES user(id) NULL,
     name TEXT NOT NULL,
+    slug TEXT NOT NULL,
     description TEXT NULL,
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -241,33 +243,16 @@ CREATE TABLE workflow_projects IF NOT EXISTS (
         (org_id IS NULL AND user_id IS NOT NULL)
     ),
 
-    CONSTRAINT unique_project_per_org UNIQUE (name, org_id),
-    CONSTRAINT unique_project_per_user UNIQUE (name, user_id),
+    CONSTRAINT unique_project_name_per_org UNIQUE (name, org_id),
+    CONSTRAINT unique_project_slug_per_org UNIQUE (slug, org_id),
+    CONSTRAINT unique_project_name_per_user UNIQUE (name, user_id),
+    CONSTRAINT unique_project_slug_per_user UNIQUE (slug, user_id),
 );
 
 CREATE INDEX idx_workflow_projects_org_id ON workflow_projects (org_id) WHERE org_id IS NOT NULL;
 CREATE INDEX idx_workflow_projects_user_id ON workflow_projects (user_id) WHERE user_id IS NOT NULL;
 CREATE INDEX idx_workflow_projects_name ON workflow_projects (name);
-
-
--- ─── Workflow Folders ───────────────────────────────────────────────────────
-CREATE TABLE workflow_folders IF NOT EXISTS (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
-    parent_id UUID REFERENCES workflow_folders(id) NULL,
-    org_id UUID REFERENCES org(id) NOT NULL,
-    name TEXT NOT NULL,
-    path TEXT NOT NULL UNIQUE,
-    color TEXT NOT NULL,
-    icon TEXT NOT NULL,
-    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-    UNIQUE (org_id, path),
-);
-
-CREATE INDEX idx_workflow_folders_name ON workflow_folders (name);
-CREATE INDEX idx_workflow_folders_path ON workflow_folders (path);
+CREATE INDEX idx_workflow_projects_slug ON workflow_projects (slug);
 
 -- ─── Workflows ──────────────────────────────────────────────────────────────
 CREATE TABLE workflows IF NOT EXISTS (
@@ -279,7 +264,7 @@ CREATE TABLE workflows IF NOT EXISTS (
     nodes JSONB NOT NULL DEFAULT '{}'::jsonb,
     edges JSONB NOT NULL DEFAULT '{}'::jsonb,
     status SMALLINT NOT NULL,
-    workflow_folder_id UUID REFERENCES workflow_folders(id),
+    workflow_project_id UUID REFERENCES workflow_folders(id),
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),

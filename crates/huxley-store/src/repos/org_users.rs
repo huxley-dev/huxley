@@ -9,21 +9,21 @@ use crate::{
 };
 
 #[async_trait]
-pub trait OrgUserRepository: Send + Sync {
-    fn create(&self, conn: &mut PgConnection, input: CreateOrgUser) -> impl Future<Output = HuxleyStoreResult<OrgUserModel>> + Send + '_;
-    fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<Option<OrgUserModel>>> + Send + '_;
-    fn list(&self, conn: &mut PgConnection) -> impl Future<Output = HuxleyStoreResult<Vec<OrgUserModel>>> + Send + '_;
-    fn list_by_org_id(&self, conn: &mut PgConnection, org_id: Uuid) -> impl Future<Output = HuxleyStoreResult<Vec<OrgUserModel>>> + Send + '_;
-    fn list_by_user_id(&self, conn: &mut PgConnection, user_id: Uuid) -> impl Future<Output = HuxleyStoreResult<Vec<OrgUserModel>>> + Send + '_;
-    fn list_by_org_role_id(&self, conn: &mut PgConnection, org_role_id: Uuid) -> impl Future<Output = HuxleyStoreResult<Vec<OrgUserModel>>> + Send + '_;
-    fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrgUser) -> impl Future<Output = HuxleyStoreResult<OrgUserModel>> + Send + '_;
-    fn delete(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<bool>> + Send + '_;
+pub trait OrgUsersRepository: Send + Sync {
+    async fn create(&self, conn: &mut PgConnection, input: CreateOrgUser) -> HuxleyStoreResult<OrgUserModel>;
+    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<OrgUserModel>>;
+    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<OrgUserModel>>;
+    async fn list_by_org_id(&self, conn: &mut PgConnection, org_id: Uuid) -> HuxleyStoreResult<Vec<OrgUserModel>>;
+    async fn list_by_user_id(&self, conn: &mut PgConnection, user_id: Uuid) -> HuxleyStoreResult<Vec<OrgUserModel>>;
+    async fn list_by_org_role_id(&self, conn: &mut PgConnection, org_role_id: Uuid) -> HuxleyStoreResult<Vec<OrgUserModel>>;
+    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrgUser) -> HuxleyStoreResult<OrgUserModel>;
+    async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
-pub struct PgOrgUserRepository;
+pub struct PgOrgUsersRepository;
 
 #[async_trait]
-impl OrgUserRepository for PgOrgUserRepository {
+impl OrgUsersRepository for PgOrgUsersRepository {
     async fn create(&self, conn: &mut PgConnection, input: CreateOrgUser) -> HuxleyStoreResult<OrgUserModel> {
         let org_user = sqlx::query_as!(
             OrgUserModel,

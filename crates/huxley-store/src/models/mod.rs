@@ -7,6 +7,7 @@ pub mod org_role;
 pub mod org_role_perm;
 pub mod org_user;
 pub mod tag;
+pub mod workflow_project;
 
 pub use app_perm::AppPermModel;
 pub use app_role::AppRoleModel;
@@ -17,3 +18,4 @@ pub use org_role::OrgRoleModel;
 pub use org_role_perm::OrgRolePermModel;
 pub use org_user::OrgUserModel;
 pub use tag::TagModel;
+pub use workflow_project::WorkflowProjectModel;

@@ -9,19 +9,19 @@ use crate::{
 };
 
 #[async_trait]
-pub trait OrgPermRepository: Send + Sync {
-    fn create(&self, conn: &mut PgConnection, input: CreateOrgPerm) -> impl Future<Output = HuxleyStoreResult<OrgPermModel>> + Send + '_;
-    fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<Option<OrgPermModel>>> + Send + '_;
-    fn list(&self, conn: &mut PgConnection) -> impl Future<Output = HuxleyStoreResult<Vec<OrgPermModel>>> + Send + '_;
-    fn list_by_active(&self, conn: &mut PgConnection, is_active: bool) -> impl Future<Output = HuxleyStoreResult<Vec<OrgPermModel>>> + Send + '_;
-    fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrgPerm) -> impl Future<Output = HuxleyStoreResult<OrgPermModel>> + Send + '_;
-    fn delete(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<bool>> + Send + '_;
+pub trait OrgPermsRepository: Send + Sync {
+    async fn create(&self, conn: &mut PgConnection, input: CreateOrgPerm) -> HuxleyStoreResult<OrgPermModel>;
+    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<OrgPermModel>>;
+    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<OrgPermModel>>;
+    async fn list_by_active(&self, conn: &mut PgConnection, is_active: bool) -> HuxleyStoreResult<Vec<OrgPermModel>>;
+    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrgPerm) -> HuxleyStoreResult<OrgPermModel>;
+    async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
-pub struct PgOrgPermRepository;
+pub struct PgOrgPermsRepository;
 
 #[async_trait]
-impl OrgPermRepository for PgOrgPermRepository {
+impl OrgPermsRepository for PgOrgPermsRepository {
     async fn create(&self, conn: &mut PgConnection, input: CreateOrgPerm) -> HuxleyStoreResult<OrgPermModel> {
         let org_perm = sqlx::query_as!(
             OrgPermModel,

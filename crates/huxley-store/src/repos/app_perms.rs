@@ -10,12 +10,12 @@ use crate::{
 
 #[async_trait]
 pub trait AppPermsRepository: Send + Sync {
-    fn create(&self, conn: &mut PgConnection, input: CreateAppPerm) -> impl Future<Output = HuxleyStoreResult<AppPermModel>> + Send + '_;
-    fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<Option<AppPermModel>>> + Send + '_;
-    fn list(&self, conn: &mut PgConnection) -> impl Future<Output = HuxleyStoreResult<Vec<AppPermModel>>> + Send + '_;
-    fn list_by_active(&self, conn: &mut PgConnection, is_active: bool) -> impl Future<Output = HuxleyStoreResult<Vec<AppPermModel>>> + Send + '_;
-    fn update(&self, id: Uuid, conn: &mut PgConnection, input: UpdateAppPerm) -> impl Future<Output = HuxleyStoreResult<AppPermModel>> + Send + '_;
-    fn delete(&self, id: Uuid, conn: &mut PgConnection) -> impl Future<Output = HuxleyStoreResult<bool>> + Send + '_;
+    async fn create(&self, conn: &mut PgConnection, input: CreateAppPerm) -> HuxleyStoreResult<AppPermModel>;
+    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<AppPermModel>>;
+    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<AppPermModel>>;
+    async fn list_by_active(&self, conn: &mut PgConnection, is_active: bool) -> HuxleyStoreResult<Vec<AppPermModel>>;
+    async fn update(&self, id: Uuid, conn: &mut PgConnection, input: UpdateAppPerm) -> HuxleyStoreResult<AppPermModel>;
+    async fn delete(&self, id: Uuid, conn: &mut PgConnection) -> HuxleyStoreResult<bool>;
 }
 
 pub struct PgAppPermsRepository;

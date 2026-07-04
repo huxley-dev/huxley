@@ -9,19 +9,19 @@ use crate::{
 };
 
 #[async_trait]
-pub trait AppRoleRepository: Send + Sync {
-    fn create(&self, conn: &mut PgConnection, input: CreateAppRole) -> impl Future<Output = HuxleyStoreResult<AppRoleModel>> + Send + '_;
-    fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<Option<AppRoleModel>>> + Send + '_;
-    fn list(&self, conn: &mut PgConnection) -> impl Future<Output = HuxleyStoreResult<Vec<AppRoleModel>>> + Send + '_;
-    fn list_by_active(&self, conn: &mut PgConnection, is_active: bool) -> impl Future<Output = HuxleyStoreResult<Vec<AppRoleModel>>> + Send + '_;
-    fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateAppRole) -> impl Future<Output = HuxleyStoreResult<AppRoleModel>> + Send + '_;
-    fn delete(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<bool>> + Send + '_;
+pub trait AppRolesRepository: Send + Sync {
+    async fn create(&self, conn: &mut PgConnection, input: CreateAppRole) -> HuxleyStoreResult<AppRoleModel>;
+    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<AppRoleModel>>;
+    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<AppRoleModel>>;
+    async fn list_by_active(&self, conn: &mut PgConnection, is_active: bool) -> HuxleyStoreResult<Vec<AppRoleModel>>;
+    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateAppRole) -> HuxleyStoreResult<AppRoleModel>;
+    async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
-pub struct PgAppRoleRepository;
+pub struct PgAppRolesRepository;
 
 #[async_trait]
-impl AppRoleRepository for PgAppRoleRepository {
+impl AppRolesRepository for PgAppRolesRepository {
     async fn create(&self, conn: &mut PgConnection, input: CreateAppRole) -> HuxleyStoreResult<AppRoleModel> {
         let app_role = sqlx::query_as!(
             AppRoleModel,

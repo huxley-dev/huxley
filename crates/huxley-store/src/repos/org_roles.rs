@@ -9,19 +9,19 @@ use crate::{
 };
 
 #[async_trait]
-pub trait OrgRoleRepository: Send + Sync {
-    fn create(&self, conn: &mut PgConnection, input: CreateOrgRole) -> impl Future<Output = HuxleyStoreResult<OrgRoleModel>> + Send + '_;
-    fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<Option<OrgRoleModel>>> + Send + '_;
-    fn list(&self, conn: &mut PgConnection) -> impl Future<Output = HuxleyStoreResult<Vec<OrgRoleModel>>> + Send + '_;
-    fn list_by_active(&self, conn: &mut PgConnection, is_active: bool) -> impl Future<Output = HuxleyStoreResult<Vec<OrgRoleModel>>> + Send + '_;
-    fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrgRole) -> impl Future<Output = HuxleyStoreResult<OrgRoleModel>> + Send + '_;
-    fn delete(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<bool>> + Send + '_;
+pub trait OrgRolesRepository: Send + Sync {
+    async fn create(&self, conn: &mut PgConnection, input: CreateOrgRole) -> HuxleyStoreResult<OrgRoleModel>;
+    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<OrgRoleModel>>;
+    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<OrgRoleModel>>;
+    async fn list_by_active(&self, conn: &mut PgConnection, is_active: bool) -> HuxleyStoreResult<Vec<OrgRoleModel>>;
+    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrgRole) -> HuxleyStoreResult<OrgRoleModel>;
+    async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
-pub struct PgOrgRoleRepository;
+pub struct PgOrgRolesRepository;
 
 #[async_trait]
-impl OrgRoleRepository for PgOrgRoleRepository {
+impl OrgRolesRepository for PgOrgRolesRepository {
     async fn create(&self, conn: &mut PgConnection, input: CreateOrgRole) -> HuxleyStoreResult<OrgRoleModel> {
         let org_role = sqlx::query_as!(
             OrgRoleModel,

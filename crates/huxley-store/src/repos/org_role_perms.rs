@@ -9,20 +9,20 @@ use crate::{
 };
 
 #[async_trait]
-pub trait OrgRolePermRepository: Send + Sync {
-    fn create(&self, conn: &mut PgConnection, input: CreateOrgRolePerm) -> impl Future<Output = HuxleyStoreResult<OrgRolePermModel>> + Send + '_;
-    fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<Option<OrgRolePermModel>>> + Send + '_;
-    fn list(&self, conn: &mut PgConnection) -> impl Future<Output = HuxleyStoreResult<Vec<OrgRolePermModel>>> + Send + '_;
-    fn list_by_org_role_id(&self, conn: &mut PgConnection, org_role_id: Uuid) -> impl Future<Output = HuxleyStoreResult<Vec<OrgRolePermModel>>> + Send + '_;
-    fn list_by_org_perm_id(&self, conn: &mut PgConnection, org_perm_id: Uuid) -> impl Future<Output = HuxleyStoreResult<Vec<OrgRolePermModel>>> + Send + '_;
-    fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrgRolePerm) -> impl Future<Output = HuxleyStoreResult<OrgRolePermModel>> + Send + '_;
-    fn delete(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<bool>> + Send + '_;
+pub trait OrgRolePermsRepository: Send + Sync {
+    async fn create(&self, conn: &mut PgConnection, input: CreateOrgRolePerm) -> HuxleyStoreResult<OrgRolePermModel>;
+    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<OrgRolePermModel>>;
+    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<OrgRolePermModel>>;
+    async fn list_by_org_role_id(&self, conn: &mut PgConnection, org_role_id: Uuid) -> HuxleyStoreResult<Vec<OrgRolePermModel>>;
+    async fn list_by_org_perm_id(&self, conn: &mut PgConnection, org_perm_id: Uuid) -> HuxleyStoreResult<Vec<OrgRolePermModel>>;
+    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrgRolePerm) -> HuxleyStoreResult<OrgRolePermModel>;
+    async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
-pub struct PgOrgRolePermRepository;
+pub struct PgOrgRolePermsRepository;
 
 #[async_trait]
-impl OrgRolePermRepository for PgOrgRolePermRepository {
+impl OrgRolePermsRepository for PgOrgRolePermsRepository {
     async fn create(&self, conn: &mut PgConnection, input: CreateOrgRolePerm) -> HuxleyStoreResult<OrgRolePermModel> {
         let org_role_perm = sqlx::query_as!(
             OrgRolePermModel,
@@ -102,22 +102,6 @@ impl OrgRolePermRepository for PgOrgRolePermRepository {
         .await?;
 
         Ok(org_role_perms)
-    }
-
-    async fn list_by_org_role_id(&self, conn: &mut PgConnection, org_id: Uuid) -> HuxleyStoreResult<Vec<OrgUserModel>> {
-        let org_users = sqlx::query_as!(
-            OrgUserModel,
-            r#"
-                SELECT id, org_id, user_id, org_user_id, metadata, created_at, updated_at
-                FROM org_users
-                WHERE org_role_id = $1
-            "#,
-            org_role_id,
-        )
-        .fetch_all(conn)
-        .await?;
-
-        Ok(org_users)
     }
 
     async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrgRolePerm) -> HuxleyStoreResult<OrgRolePermModel> {

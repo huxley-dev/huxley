@@ -9,20 +9,20 @@ use crate::{
 };
 
 #[async_trait]
-pub trait TagRepository: Send + Sync {
-    fn create(&self, conn: &mut PgConnection, input: CreateTag) -> impl Future<Output = HuxleyStoreResult<TagModel>> + Send + '_;
-    fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<Option<TagModel>>> + Send + '_;
-    fn find_by_type_and_name(&self, conn: &mut PgConnection, tag_type: i16, name: &str) -> impl Future<Output = HuxleyStoreResult<Option<TagModel>>> + Send + '_;
-    fn list(&self, conn: &mut PgConnection) -> impl Future<Output = HuxleyStoreResult<Vec<TagModel>>> + Send + '_;
-    fn list_by_type(&self, conn: &mut PgConnection, tag_type: i16) -> impl Future<Output = HuxleyStoreResult<Vec<TagModel>>> + Send + '_;
-    fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateTag) -> impl Future<Output = HuxleyStoreResult<TagModel>> + Send + '_;
-    fn delete(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<bool>> + Send + '_;
+pub trait TagsRepository: Send + Sync {
+    async fn create(&self, conn: &mut PgConnection, input: CreateTag) -> HuxleyStoreResult<TagModel>;
+    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<TagModel>>;
+    async fn find_by_type_and_name(&self, conn: &mut PgConnection, tag_type: i16, name: &str) -> HuxleyStoreResult<Option<TagModel>>;
+    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<TagModel>>;
+    async fn list_by_type(&self, conn: &mut PgConnection, tag_type: i16) -> HuxleyStoreResult<Vec<TagModel>>;
+    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateTag) -> HuxleyStoreResult<TagModel>;
+    async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
-pub struct PgTagRepository;
+pub struct PgTagsRepository;
 
 #[async_trait]
-impl TagRepository for PgTagRepository {
+impl TagsRepository for PgTagsRepository {
     async fn create(&self, conn: &mut PgConnection, input: CreateTag) -> HuxleyStoreResult<TagModel> {
         let tag = sqlx::query_as!(
             TagModel,

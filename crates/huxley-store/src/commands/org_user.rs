@@ -8,5 +8,5 @@ pub struct CreateOrgUser {
 }
 
 pub struct UpdateOrgUser {
-    pub metadata: serde_json::Value,
+    pub metadata: Option<serde_json::Value>,
 }

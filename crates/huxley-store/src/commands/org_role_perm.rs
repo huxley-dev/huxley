@@ -7,5 +7,5 @@ pub struct CreateOrgRolePerm {
 }
 
 pub struct UpdateOrgRolePerm {
-    pub metadata: serde_json::Value,
+    pub metadata: Option<serde_json::Value>,
 }

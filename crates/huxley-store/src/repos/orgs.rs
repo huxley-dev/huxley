@@ -9,19 +9,19 @@ use crate::{
 };
 
 #[async_trait]
-pub trait OrgRepository: Send + Sync {
-    fn create(&self, conn: &mut PgConnection, input: CreateOrg) -> impl Future<Output = HuxleyStoreResult<OrgModel>> + Send + '_;
-    fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<Option<OrgModel>>> + Send + '_;
-    fn find_by_name(&self, conn: &mut PgConnection, name: &str) -> impl Future<Output = HuxleyStoreResult<Option<OrgModel>>> + Send + '_;
-    fn list(&self, conn: &mut PgConnection) -> impl Future<Output = HuxleyStoreResult<Vec<OrgModel>>> + Send + '_;
-    fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrg) -> impl Future<Output = HuxleyStoreResult<OrgModel>> + Send + '_;
-    fn delete(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<bool>> + Send + '_;
+pub trait OrgsRepository: Send + Sync {
+    async fn create(&self, conn: &mut PgConnection, input: CreateOrg) -> HuxleyStoreResult<OrgModel>;
+    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<OrgModel>>;
+    async fn find_by_name(&self, conn: &mut PgConnection, name: &str) -> HuxleyStoreResult<Option<OrgModel>>;
+    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<OrgModel>>;
+    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrg) -> HuxleyStoreResult<OrgModel>;
+    async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
-pub struct PgOrgRepository;
+pub struct PgOrgsRepository;
 
 #[async_trait]
-impl OrgRepository for PgOrgRepository {
+impl OrgsRepository for PgOrgsRepository {
     async fn create(&self, conn: &mut PgConnection, input: CreateOrg) -> HuxleyStoreResult<OrgModel> {
         let org = sqlx::query_as!(
             OrgModel,

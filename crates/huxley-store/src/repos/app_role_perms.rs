@@ -9,20 +9,20 @@ use crate::{
 };
 
 #[async_trait]
-pub trait AppRolePermRepository: Send + Sync {
-    fn create(&self, conn: &mut PgConnection, input: CreateAppRolePerm) -> impl Future<Output = HuxleyStoreResult<AppRolePermModel>> + Send + '_;
-    fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<Option<AppRolePermModel>>> + Send + '_;
-    fn list(&self, conn: &mut PgConnection) -> impl Future<Output = HuxleyStoreResult<Vec<AppRolePermModel>>> + Send + '_;
-    fn list_by_app_role_id(&self, conn: &mut PgConnection, app_role_id: Uuid) -> impl Future<Output = HuxleyStoreResult<Vec<AppRolePermModel>>> + Send + '_;
-    fn list_by_app_perm_id(&self, conn: &mut PgConnection, app_perm_id: Uuid) -> impl Future<Output = HuxleyStoreResult<Vec<AppRolePermModel>>> + Send + '_;
-    fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateAppRolePerm) -> impl Future<Output = HuxleyStoreResult<AppRolePermModel>> + Send + '_;
-    fn delete(&self, conn: &mut PgConnection, id: Uuid) -> impl Future<Output = HuxleyStoreResult<bool>> + Send + '_;
+pub trait AppRolePermsRepository: Send + Sync {
+    async fn create(&self, conn: &mut PgConnection, input: CreateAppRolePerm) -> HuxleyStoreResult<AppRolePermModel>;
+    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<AppRolePermModel>>;
+    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<AppRolePermModel>>;
+    async fn list_by_app_role_id(&self, conn: &mut PgConnection, app_role_id: Uuid) -> HuxleyStoreResult<Vec<AppRolePermModel>>;
+    async fn list_by_app_perm_id(&self, conn: &mut PgConnection, app_perm_id: Uuid) -> HuxleyStoreResult<Vec<AppRolePermModel>>;
+    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateAppRolePerm) -> HuxleyStoreResult<AppRolePermModel>;
+    async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
-pub struct PgAppRolePermRepository;
+pub struct PgAppRolePermsRepository;
 
 #[async_trait]
-impl AppRolePermRepository for PgAppRolePermRepository {
+impl AppRolePermsRepository for PgAppRolePermsRepository {
     async fn create(&self, conn: &mut PgConnection, input: CreateAppRolePerm) -> HuxleyStoreResult<AppRolePermModel> {
         let app_role_perm = sqlx::query_as!(
             AppRolePermModel,

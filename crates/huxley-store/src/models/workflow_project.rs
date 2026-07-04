@@ -4,13 +4,12 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 #[derive(Debug, FromRow, Deserialize, Serialize)]
-pub struct OrgModel {
+pub struct WorkflowProjectModel {
     pub id: Uuid,
-    pub parent_id: Option<Uuid>,
+    pub org_id: Uuid,
     pub name: String,
     pub slug: String,
-    pub is_active: bool,
-    pub mappings: serde_json::Value,
+    pub description: Option<String>,
     pub metadata: serde_json::Value,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

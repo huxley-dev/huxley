@@ -7,6 +7,7 @@ pub mod org_role;
 pub mod org_role_perm;
 pub mod org_user;
 pub mod tag;
+pub mod workflow_project;
 
 pub use app_perm::{CreateAppPerm, UpdateAppPerm};
 pub use app_role::{CreateAppRole, UpdateAppRole};
@@ -17,3 +18,4 @@ pub use org_role::{CreateOrgRole, UpdateOrgRole};
 pub use org_role_perm::{CreateOrgRolePerm, UpdateOrgRolePerm};
 pub use org_user::{CreateOrgUser, UpdateOrgUser};
 pub use tag::{CreateTag, UpdateTag};
+pub use workflow_project::{CreateWorkflowProject, UpdateWorkflowProject};

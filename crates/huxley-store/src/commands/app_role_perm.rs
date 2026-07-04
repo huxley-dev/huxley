@@ -7,5 +7,5 @@ pub struct CreateAppRolePerm {
 }
 
 pub struct UpdateAppRolePerm {
-    pub metadata: serde_json::Value,
+    pub metadata: Option<serde_json::Value>,
 }
