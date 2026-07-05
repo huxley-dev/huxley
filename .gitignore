@@ -237,3 +237,6 @@ $RECYCLE.BIN/
 
 # UI Build folder
 ui/build
+
+# Python Virtual Environment
+.venv/
