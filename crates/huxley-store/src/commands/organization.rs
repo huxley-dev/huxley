@@ -1,4 +1,4 @@
-pub struct CreateOrg {
+pub struct CreateOrganization {
     pub parent_id: Option<String>,
     pub name: String,
     pub slug: String,
@@ -7,7 +7,7 @@ pub struct CreateOrg {
     pub metadata: serde_json::Value,
 }
 
-pub struct UpdateOrg {
+pub struct UpdateOrganization {
     pub name: Option<String>,
     pub slug: Option<String>,
     pub is_active: Option<bool>,

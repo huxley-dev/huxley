@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     session_id UUID PRIMARY KEY DEFAULT uuidv7(),
     user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     idp_id UUID NOT NULL REFERENCES identity_providers(idp_id) ON DELETE SET NULL,
-    token_hash BYTEA NOT ULL UNIQUE,
+    token_hash BYTEA NOT NULL UNIQUE,
     aal SMALLINT NOT NULL DEFAULT 1,
     auth_method TEXT NOT NULL,
     ip INET,

@@ -4,12 +4,13 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 #[derive(Debug, FromRow, Deserialize, Serialize)]
-pub struct AppPermModel {
-    pub id: Uuid,
+pub struct OrganizationModel {
+    pub org_id: Uuid,
+    pub parent_id: Option<Uuid>,
     pub name: String,
-    pub description: Option<String>,
-    pub is_active: bool,
-    pub metadata: serde_json::Value,
+    pub slug: String,
+    pub status: String,
+    pub settings: serde_json::Value,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

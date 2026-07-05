@@ -1,21 +1,21 @@
 -- ────────────────────────────────────────────────────────────────────────────
--- 053: Org Users
+-- 066: Credentials
 -- ────────────────────────────────────────────────────────────────────────────
 
 -- ─── Tables ─────────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS org_users (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
-    org_id UUID NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    org_role_id UUID NOT NULL REFERENCES org_roles(org_role_id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS credentials (
+    cred_id UUID PRIMARY KEY DEFAULT uuidv7(),
+    org_id UUID NOT NULL REFERENCES organizations(org_id),
+    name TEXT NOT NULL,
+    value BYTEA NULL,
+    inheritable BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ,
-
-    UNIQUE (org_role_id, user_id),
+    update_at TIMESTAMPTZ,
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────
-SELECT trigger_updated_at('org_users');
+SELECT trigger_updated_at('credentials');
 
 -- ─── Indexes ────────────────────────────────────────────────────────────────
-CREATE INDEX idx_org_users_user_id ON org_users (user_id);
+CREATE INDEX idx_credential_name ON credentials (name);
+CREATE INDEX idx_credential_inheritable ON credentials (heritable);

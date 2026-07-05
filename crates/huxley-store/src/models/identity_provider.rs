@@ -4,14 +4,14 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 #[derive(Debug, FromRow, Deserialize, Serialize)]
-pub struct OrgModel {
-    pub id: Uuid,
-    pub parent_id: Option<Uuid>,
+pub struct IdentityProviderModel {
+    pub idp_id: Uuid,
+    pub kind: String,
     pub name: String,
     pub slug: String,
-    pub is_active: bool,
-    pub mappings: serde_json::Value,
-    pub metadata: serde_json::Value,
+    pub enabled: bool,
+    pub config: serde_json::Value,
+    pub secret_enc: Vec<u8>,
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub updated_at: Option<DateTime<Utc>>,
 }

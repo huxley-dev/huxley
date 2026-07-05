@@ -5,9 +5,10 @@
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS login_attempts (
     login_attempt_id UUID PRIMARY KEY DEFAULT uuidv7(),
-    email TEXT COLLATE "case_insensitive",
     user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE SET NULL,
+    email TEXT COLLATE "case_insensitive",
     ip INET,
+    user_agent TEXT,
     successful BOOLEAN NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ,

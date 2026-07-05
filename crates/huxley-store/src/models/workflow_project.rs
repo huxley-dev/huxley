@@ -5,12 +5,13 @@ use uuid::Uuid;
 
 #[derive(Debug, FromRow, Deserialize, Serialize)]
 pub struct WorkflowProjectModel {
-    pub id: Uuid,
-    pub org_id: Uuid,
+    pub wf_project_id: Uuid,
+    pub project_type: String,
+    pub org_id: Option<Uuid>,
+    pub user_id: Option<Uuid>,
     pub name: String,
     pub slug: String,
     pub description: Option<String>,
-    pub metadata: serde_json::Value,
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub updated_at: Option<DateTime<Utc>>,
 }

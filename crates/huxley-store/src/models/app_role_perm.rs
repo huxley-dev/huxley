@@ -7,8 +7,7 @@ use uuid::Uuid;
 pub struct AppRolePermModel {
     pub id: Uuid,
     pub app_role_id: Uuid,
-    pub app_perm_id: Uuid,
-    pub metadata: serde_json::Value,
+    pub permission: String,
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub updated_at: Option<DateTime<Utc>>,
 }

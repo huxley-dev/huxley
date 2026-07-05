@@ -4,10 +4,11 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 #[derive(Debug, FromRow, Deserialize, Serialize)]
-pub struct AppRoleModel {
-    pub app_role_id: Uuid,
-    pub name: String,
-    pub description: Option<String>,
+pub struct TotpCredentialModel {
+    pub totp_cred_id: Uuid,
+    pub user_id: Uuid,
+    pub secret_enc: Vec<u8>,
+    pub confirmed_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,
 }
