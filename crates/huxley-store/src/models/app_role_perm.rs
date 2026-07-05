@@ -8,6 +8,7 @@ pub struct AppRolePermModel {
     pub id: Uuid,
     pub app_role_id: Uuid,
     pub permission: String,
+    pub built_in: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,
 }

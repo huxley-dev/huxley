@@ -5,6 +5,7 @@ use uuid::Uuid;
 use crate::{
     commands::app_role::{CreateAppRole, UpdateAppRole},
     models::app_role::AppRoleModel,
+    common::{Page, PageQuery, PageSort},
     HuxleyStoreResult,
 };
 
@@ -12,8 +13,7 @@ use crate::{
 pub trait AppRolesRepository: Send + Sync {
     async fn create(&self, conn: &mut PgConnection, input: CreateAppRole) -> HuxleyStoreResult<AppRoleModel>;
     async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<AppRoleModel>>;
-    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<AppRoleModel>>;
-    async fn list_by_active(&self, conn: &mut PgConnection, is_active: bool) -> HuxleyStoreResult<Vec<AppRoleModel>>;
+    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Vec<AppRoleModel>>;
     async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateAppRole) -> HuxleyStoreResult<AppRoleModel>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
@@ -23,29 +23,28 @@ pub struct PgAppRolesRepository;
 #[async_trait]
 impl AppRolesRepository for PgAppRolesRepository {
     async fn create(&self, conn: &mut PgConnection, input: CreateAppRole) -> HuxleyStoreResult<AppRoleModel> {
-        let app_role = sqlx::query_as!(
+        let result = sqlx::query_as!(
             AppRoleModel,
             r#"
-                INSERT INTO app_roles (name, description, is_active, metadata)
-                VALUES ($1, $2, $3, $4)
-                RETURNING id, name, description, is_active, metadata, created_at, updated_at
+                INSERT INTO app_roles (name, description, built_in)
+                VALUES ($1, $2, $3)
+                RETURNING app_role_id, name, description, built_in, created_at, updated_at
             "#,
             input.name,
             input.description,
-            input.is_active,
-            input.metadata,
+            input.built_in,
         )
         .fetch_one(conn)
         .await?;
 
-        Ok(app_role)
+        Ok(result)
     }
 
     async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<AppRoleModel>> {
-        let app_role = sqlx::query_as!(
+        let result = sqlx::query_as!(
             AppRoleModel,
             r#"
-                SELECT id, name, description, is_active, metadata, created_at, updated_at
+                SELECT id, name, description, built_in, created_at, updated_at
                 FROM app_roles
                 WHERE id = $1
             "#,
@@ -54,60 +53,78 @@ impl AppRolesRepository for PgAppRolesRepository {
         .fetch_optional(conn)
         .await?;
 
-        Ok(app_role)
+        Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<AppRoleModel>> {
-        let app_roles = sqlx::query_as!(
-            AppRoleModel,
-            r#"
-                SELECT id, name, description, is_active, metadata, created_at, updated_at
-                FROM app_roles
-            "#
-        )
-        .fetch_all(conn)
-        .await?;
+    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<AppRoleModel>> {
+        let resolved_limit = page.resolved_limit();
 
-        Ok(app_roles)
-    }
+        let result = match page.resolved_sort() {
+            PageSort::Asc => {
+                sqlx::query_as!(
+                    AppRoleModel,
+                    r#"
+                        SELECT id, name, description, built_in, created_at, updated_at
+                        FROM app_roles
+                        WHERE ($2::bigint IS NULL OR app_role_id >= $2)
+                        ORDER BY api_token_id ASC
+                        LIMIT $1 + 1
+                    "#,
+                    resolved_limit,
+                    page.next_cursor,
+                )
+                .fetch_all(conn)
+                .await?
+            },
+            PageSort::Desc => {
+                sqlx::query_as!(
+                    AppRoleModel,
+                    r#"
+                        SELECT id, name, description, built_in, created_at, updated_at
+                        FROM app_roles
+                        WHERE ($2::bigint IS NULL OR app_role_id <= $2)
+                        ORDER BY api_token_id DESC
+                        LIMIT $1 + 1
+                    "#,
+                    resolved_limit,
+                    page.next_cursor,
+                )
+                .fetch_all(conn)
+                .await?
+            }
+        };
 
-    async fn list_by_active(&self, conn: &mut PgConnection, is_active: bool) -> HuxleyStoreResult<Vec<AppRoleModel>> {
-        let app_roles = sqlx::query_as!(
-            AppRoleModel,
-            r#"
-                SELECT id, name, description, is_active, metadata, created_at, updated_at
-                FROM app_roles
-                WHERE is_active = $1
-            "#,
-            is_active,
-        )
-        .fetch_all(conn)
-        .await?;
+        let has_more = result.len() as i64 > resolved_limit;
+        let items: Vec<AppRoleModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let next_cursor = if has_more {
+            items.last().map(|i| i.app_role_id)
+        } else {
+            None
+        };
 
-        Ok(app_roles)
+        Ok(Page { items, next_cursor })
     }
 
     async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateAppRole) -> HuxleyStoreResult<AppRoleModel> {
-        let app_role = sqlx::query_as!(
+        let (set_name, name) = input.name.into_parts();
+        let (set_description, description) = input.description.into_parts();
+
+        let result = sqlx::query_as!(
             AppRoleModel,
             r#"
                 UPDATE app_roles
-                SET name = $2,
-                    description = $3,
-                    is_active = $4,
-                    metadata = $5,
-                WHERE id = $1
+                SET name = CASE WHEN $2 THEN $3::text ELSE name END,
+                    description = CASE WHEN $4 THEN $5::text ELSE description END,
+                WHERE app_role_id = $1 AND built_in = FALSE
             "#,
             id,
-            input.name,
-            input.description,
-            input.is_active,
-            input.metadata,
+            set_name, name,
+            set_description, description,
         )
         .execute(conn)
         .await?;
 
-        Ok(app_role)
+        Ok(result)
     }
 
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool> {

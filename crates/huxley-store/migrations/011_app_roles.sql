@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS app_roles (
     app_role_id UUID PRIMARY KEY DEFAULT uuidv7(),
     name TEXT COLLATE "case_insensitive" NOT NULL UNIQUE,
     description TEXT,
+    built_in BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ,
 );

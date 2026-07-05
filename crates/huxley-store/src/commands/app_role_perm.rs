@@ -1,11 +1,13 @@
 use uuid::Uuid;
 
+use crate::common::Field;
+
 pub struct CreateAppRolePerm {
     pub app_role_id: Uuid,
-    pub app_perm_id: Uuid,
-    pub metadata: serde_json::Value,
+    pub permission: String,
 }
 
 pub struct UpdateAppRolePerm {
-    pub metadata: Option<serde_json::Value>,
+    pub app_role_id: Field<Uuid>,
+    pub permission: Field<String>,
 }

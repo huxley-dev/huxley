@@ -5,6 +5,7 @@ use uuid::Uuid;
 use crate::{
     commands::app_role_perm::{CreateAppRolePerm, UpdateAppRolePerm},
     models::app_role_perm::AppRolePermModel,
+    common::{Page, PageQuery, PageSort},
     HuxleyStoreResult,
 };
 
@@ -12,9 +13,8 @@ use crate::{
 pub trait AppRolePermsRepository: Send + Sync {
     async fn create(&self, conn: &mut PgConnection, input: CreateAppRolePerm) -> HuxleyStoreResult<AppRolePermModel>;
     async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<AppRolePermModel>>;
-    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<AppRolePermModel>>;
-    async fn list_by_app_role_id(&self, conn: &mut PgConnection, app_role_id: Uuid) -> HuxleyStoreResult<Vec<AppRolePermModel>>;
-    async fn list_by_app_perm_id(&self, conn: &mut PgConnection, app_perm_id: Uuid) -> HuxleyStoreResult<Vec<AppRolePermModel>>;
+    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Vec<AppRolePermModel>>;
+    async fn list_by_app_role_id(&self, conn: &mut PgConnection, app_role_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<AppRolePermModel>>;
     async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateAppRolePerm) -> HuxleyStoreResult<AppRolePermModel>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
@@ -24,124 +24,166 @@ pub struct PgAppRolePermsRepository;
 #[async_trait]
 impl AppRolePermsRepository for PgAppRolePermsRepository {
     async fn create(&self, conn: &mut PgConnection, input: CreateAppRolePerm) -> HuxleyStoreResult<AppRolePermModel> {
-        let app_role_perm = sqlx::query_as!(
+        let result = sqlx::query_as!(
             AppRolePermModel,
             r#"
-                INSERT INTO app_role_perms (app_role_id, app_perm_id, metadata)
-                VALUES ($1, $2, $3)
-                RETURNING id, app_role_id, app_perm_id, metadata, created_at, updated_at
+                INSERT INTO app_role_perms (app_role_id, permission)
+                VALUES ($1, $2)
+                RETURNING app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
             "#,
             input.app_role_id,
-            input.app_perm_id,
-            input.metadata,
+            input.permission,
         )
         .fetch_one(conn)
         .await?;
 
-        Ok(app_role_perm)
+        Ok(result)
     }
 
     async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<AppRolePermModel>> {
-        let app_role_perm = sqlx::query_as!(
+        let result = sqlx::query_as!(
             AppRolePermModel,
             r#"
-                SELECT id, app_role_id, app_perm_id, metadata, created_at, updated_at
+                SELECT app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
                 FROM app_role_perms
-                WHERE id = $1
+                WHERE app_role_perm_id = $1
             "#,
             id
         )
         .fetch_optional(conn)
         .await?;
 
-        Ok(app_role_perm)
+        Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<AppRolePermModel>> {
-        let app_role_perms = sqlx::query_as!(
-            AppRolePermModel,
-            r#"
-                SELECT id, org_id, user_id, org_user_id, metadata, created_at, updated_at
-                FROM app_role_perms
-            "#
-        )
-        .fetch_all(conn)
-        .await?;
+    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<AppRolePermModel>> {
+        let resolved_limit = page.resolved_limit();
 
-        Ok(app_role_perms)
+        let result = match page.resolved_sort() {
+            PageSort::Asc => {
+                sqlx::query_as!(
+                    AppRolePermModel,
+                    r#"
+                        SELECT app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
+                        FROM app_role_perms
+                        WHERE ($2::bigint IS NULL OR app_role_perm_id >= $2)
+                        ORDER_BY app_role_perm_id ASC
+                        LIMIT $1 + 1
+                    "#,
+                    resolved_limit,
+                    page.next_cursor,
+                )
+                .fetch_all(conn)
+                .await?
+            },
+            PageSort::Desc => {
+                sqlx::query_as!(
+                    AppRolePermModel,
+                    r#"
+                        SELECT app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
+                        FROM app_role_perms
+                        WHERE ($2::bigint IS NULL OR app_role_perm_id <= $2)
+                        ORDER_BY app_role_perm_id DESC
+                        LIMIT $1 + 1
+                    "#,
+                    resolved_limit,
+                    page.next_cursor,
+                )
+                .fetch_all(conn)
+                .await?
+            },
+        };
+
+        let has_more = result.len() as i64 > resolved_limit;
+        let items: Vec<AppRolePermModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let next_cursor = if has_more {
+            items.last().map(|i| i.app_role_perm_id)
+        } else {
+            None
+        };
+
+        Ok(Page { items, next_cursor })
     }
 
 
-    async fn list_by_app_role_id(&self, conn: &mut PgConnection, app_role_id: Uuid) -> HuxleyStoreResult<Vec<AppRolePermModel>> {
-        let app_role_perms = sqlx::query_as!(
-            AppRolePermModel,
-            r#"
-                SELECT id, app_role_id, app_perm_id, metadata, created_at, updated_at
-                FROM app_role_perms
-                WHERE app_role_id = $1
-            "#,
-            app_role_id,
-        )
-        .fetch_all(conn)
-        .await?;
+    async fn list_by_app_role_id(&self, conn: &mut PgConnection, app_role_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<AppRolePermModel>> {
+        let resolved_limit = page.resolved_limit();
 
-        Ok(app_role_perms)
-    }
+        let result = match page.resolved_sort() {
+            PageSort::Asc => {
+                sqlx::query_as!(
+                    AppRolePermModel,
+                    r#"
+                        SELECT app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
+                        FROM app_role_perms
+                        WHERE ($2::bigint IS NULL OR app_role_perm_id >= $2) AND (app_role_id = $3)
+                        ORDER_BY app_role_perm_id ASC
+                        LIMIT $1 + 1
+                    "#,
+                    resolved_limit,
+                    page.next_cursor,
+                    app_role_id,
+                )
+                .fetch_all(conn)
+                .await?
+            },
+            PageSort::Desc => {
+                sqlx::query_as!(
+                    AppRolePermModel,
+                    r#"
+                        SELECT app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
+                        FROM app_role_perms
+                        WHERE ($2::bigint IS NULL OR app_role_perm_id <= $2) AND (app_role_id = $3)
+                        ORDER_BY app_role_perm_id DESC
+                        LIMIT $1 + 1
+                    "#,
+                    resolved_limit,
+                    page.next_cursor,
+                    app_role_id
+                )
+                .fetch_all(conn)
+                .await?
+            },
+        };
 
-    async fn list_by_app_perm_id(&self, conn: &mut PgConnection, user_id: Uuid) -> HuxleyStoreResult<Vec<AppRolePermModel>> {
-        let app_role_perms = sqlx::query_as!(
-            AppRolePermModel,
-            r#"
-                SELECT id, app_role_id, app_perm_id, metadata, created_at, updated_at
-                FROM app_role_perms
-                WHERE app_perm_id = $1
-            "#,
-            app_perm_id,
-        )
-        .fetch_all(conn)
-        .await?;
+        let has_more = result.len() as i64 > resolved_limit;
+        let items: Vec<AppRolePermModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let next_cursor = if has_more {
+            items.last().map(|i| i.app_role_perm_id)
+        } else {
+            None
+        };
 
-        Ok(app_role_perms)
-    }
-
-    async fn list_by_org_role_id(&self, conn: &mut PgConnection, org_id: Uuid) -> HuxleyStoreResult<Vec<OrgUserModel>> {
-        let org_users = sqlx::query_as!(
-            OrgUserModel,
-            r#"
-                SELECT id, org_id, user_id, org_user_id, metadata, created_at, updated_at
-                FROM org_users
-                WHERE org_role_id = $1
-            "#,
-            org_role_id,
-        )
-        .fetch_all(conn)
-        .await?;
-
-        Ok(org_users)
+        Ok(Page { items, next_cursor })
     }
 
     async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateAppRolePerm) -> HuxleyStoreResult<AppRolePermModel> {
-        let app_role_perm = sqlx::query_as!(
+        let (set_app_role_id, app_role_id) = input.app_role_id.into_parts();
+        let (set_permission, permission) = input.permission.into_parts();
+
+        let result = sqlx::query_as!(
             AppRolePermModel,
             r#"
                 UPDATE app_role_perms
-                SET metadata = $1,
-                WHERE id = $1
+                SET app_role_id = CASE WHEN $2 THEN $3::text ELSE app_role_id END,
+                    prefix = CASE WHEN $4 THEN $5::text ELSE prefix END,
+                WHERE app_role_perm_id = $1
             "#,
             id,
-            input.metadata,
+            set_app_role_id, app_role_id,
+            set_permission, permission,
         )
         .execute(conn)
         .await?;
 
-        Ok(app_role_perm)
+        Ok(result)
     }
 
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool> {
         let result = sqlx::query!(
             r#"
                 DELETE FROM app_role_perms
-                WHERE id = $1
+                WHERE app_role_perm_id = $1
             "#,
             id
         )

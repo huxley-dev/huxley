@@ -1,4 +1,5 @@
 pub mod commands;
+pub mod common;
 pub mod error;
 pub mod models;
 pub mod postgres;

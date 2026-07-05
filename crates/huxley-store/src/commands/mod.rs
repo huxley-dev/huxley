@@ -23,7 +23,7 @@ pub mod workflow_project;
 pub use api_token::{CreateApiToken, UpdateApiToken};
 pub use app_role::{CreateAppRole, UpdateAppRole};
 pub use app_role_perm::{CreateAppRolePerm, UpdateAppRolePerm};
-pub use app_setting::{CreateAppSetting, UpdateAppSetting};
+pub use app_setting::UpdateAppSetting;
 pub use audit_log::CreateAuditLog;
 pub use auth_flow::{CreateAuthFlow, UpdateAuthFlow};
 pub use federated_identity::{CreateFederatedIdentity, UpdateFederatedIdentity};
