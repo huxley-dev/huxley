@@ -176,7 +176,7 @@ impl ApiTokensRepository for PgApiTokensRepository {
                     scopes = CASE WHEN $6 THEN $7::text[] ELSE scopes END,
                     last_used_at = CASE WHEN $8 THEN $9::timestamptz ELSE last_used_at END,
                     expires_at = CASE WHEN $10 THEN $11::timestamptz ELSE expires_at END,
-                    revoked_at = CASE WHEN $12 then $13::timestamptz ELSE revoked_at END
+                    revoked_at = CASE WHEN $12 THEN $13::timestamptz ELSE revoked_at END
                 WHERE api_token_id = $1
             "#,
             id,
@@ -197,7 +197,7 @@ impl ApiTokensRepository for PgApiTokensRepository {
         let result = sqlx::query!(
             r#"
                 DELETE from api_tokens
-                WHERE id = $1
+                WHERE api_token_id = $1
             "#,
             id
         )

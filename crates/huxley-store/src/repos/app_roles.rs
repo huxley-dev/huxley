@@ -131,7 +131,7 @@ impl AppRolesRepository for PgAppRolesRepository {
         let result = sqlx::query!(
             r#"
                 DELETE FROM app_roles
-                WHERE id = $1
+                WHERE app_role_id = $1
             "#,
             id
         )

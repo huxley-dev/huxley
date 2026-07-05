@@ -94,7 +94,7 @@ impl AppSettingsRepository for PgAppSettingsRepository {
         let has_more = result.len() as i64 > resolved_limit;
         let items: Vec<AppSettingModel> = result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
-            items.last().map(|i| i.api_token_id)
+            items.last().map(|i| i.app_set_id)
         } else {
             None
         };

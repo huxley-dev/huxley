@@ -185,7 +185,7 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
                 DELETE FROM app_role_perms
                 WHERE app_role_perm_id = $1
             "#,
-            id
+            app_role_perm_id
         )
         .execute(conn)
         .await?;
