@@ -4,7 +4,7 @@
 
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS org_role_perms (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    org_role_perm_id UUID PRIMARY KEY DEFAULT uuidv7(),
     org_role_id UUID NOT NULL REFERENCES org_roles(org_role_id) ON DELETE CASCADE,
     permission TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

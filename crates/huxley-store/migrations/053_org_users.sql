@@ -4,7 +4,7 @@
 
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS org_users (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    org_user_id UUID PRIMARY KEY DEFAULT uuidv7(),
     org_id UUID NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     org_role_id UUID NOT NULL REFERENCES org_roles(org_role_id) ON DELETE CASCADE,

@@ -5,6 +5,7 @@ use uuid::Uuid;
 use crate::{
     commands::org_role::{CreateOrgRole, UpdateOrgRole},
     models::org_role::OrgRoleModel,
+    common::{Page, PageQuery, PageSort},
     HuxleyStoreResult,
 };
 
@@ -12,8 +13,7 @@ use crate::{
 pub trait OrgRolesRepository: Send + Sync {
     async fn create(&self, conn: &mut PgConnection, input: CreateOrgRole) -> HuxleyStoreResult<OrgRoleModel>;
     async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<OrgRoleModel>>;
-    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<OrgRoleModel>>;
-    async fn list_by_active(&self, conn: &mut PgConnection, is_active: bool) -> HuxleyStoreResult<Vec<OrgRoleModel>>;
+    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<OrgRoleModel>>;
     async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrgRole) -> HuxleyStoreResult<OrgRoleModel>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
@@ -23,98 +23,114 @@ pub struct PgOrgRolesRepository;
 #[async_trait]
 impl OrgRolesRepository for PgOrgRolesRepository {
     async fn create(&self, conn: &mut PgConnection, input: CreateOrgRole) -> HuxleyStoreResult<OrgRoleModel> {
-        let org_role = sqlx::query_as!(
+        let result = sqlx::query_as!(
             OrgRoleModel,
             r#"
-                INSERT INTO org_roles (name, description, is_active, metadata)
-                VALUES ($1, $2, $3, $4)
-                RETURNING id, name, description, is_active, metadata, created_at, updated_at
+                INSERT INTO org_roles (name, description)
+                VALUES ($1, $2)
+                RETURNING org_role_id, name, description, created_at, updated_at
             "#,
             input.name,
             input.description,
-            input.is_active,
-            input.metadata,
         )
         .fetch_one(conn)
         .await?;
 
-        Ok(org_role)
+        Ok(result)
     }
 
     async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<OrgRoleModel>> {
-        let org_role = sqlx::query_as!(
+        let result = sqlx::query_as!(
             OrgRoleModel,
             r#"
-                SELECT id, name, description, is_active, metadata, created_at, updated_at
+                SELECT id, name, description, created_at, updated_at
                 FROM org_roles
-                WHERE id = $1
+                WHERE org_role_id = $1
             "#,
             id
         )
         .fetch_optional(conn)
         .await?;
 
-        Ok(org_role)
+        Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<OrgRoleModel>> {
-        let org_roles = sqlx::query_as!(
-            OrgRoleModel,
-            r#"
-                SELECT id, name, description, is_active, metadata, created_at, updated_at
-                FROM org_roles
-            "#
-        )
-        .fetch_all(conn)
-        .await?;
+    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<OrgRoleModel>> {
+        let resolved_limit = page.resolved_limit();
 
-        Ok(org_roles)
-    }
+        let result = match page.resolved_sort() {
+            PageSort::Asc => {
+                sqlx::query_as!(
+                    OrgRoleModel,
+                    r#"
+                        SELECT id, name, description, created_at, updated_at
+                        FROM org_roles
+                        WHERE ($2::bigint IS NULL OR org_role_id >= $2)
+                        ORDER BY org_role_id ASC
+                        LIMIT $1 + 1
+                    "#,
+                    resolved_limit,
+                    page.next_cursor,
+                )
+                .fetch_all(conn)
+                .await?
+            },
+            PageSort::Desc => {
+                sqlx::query_as!(
+                    OrgRoleModel,
+                    r#"
+                        SELECT id, name, description, created_at, updated_at
+                        FROM org_roles
+                        WHERE ($2::bigint IS NULL OR org_role_id <= $2)
+                        ORDER BY org_role_id DESC
+                        LIMIT $1 + 1
+                    "#,
+                    resolved_limit,
+                    page.next_cursor,
+                )
+                .fetch_all(conn)
+                .await?
+            }
+        };
 
-    async fn list_by_active(&self, conn: &mut PgConnection, is_active: bool) -> HuxleyStoreResult<Vec<OrgRoleModel>> {
-        let org_roles = sqlx::query_as!(
-            OrgRoleModel,
-            r#"
-                SELECT id, name, description, is_active, metadata, created_at, updated_at
-                FROM org_roles
-                WHERE is_active = $1
-            "#,
-            is_active,
-        )
-        .fetch_all(conn)
-        .await?;
+        let has_more = result.len() as i64 > resolved_limit;
+        let items: Vec<OrgRoleModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let next_cursor = if has_more {
+            items.last().map(|i| i.org_role_id)
+        } else {
+            None
+        };
 
-        Ok(org_roles)
+        Ok(Page { items, next_cursor })
     }
 
     async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrgRole) -> HuxleyStoreResult<OrgRoleModel> {
-        let org_role = sqlx::query_as!(
+        let (set_name, name) = input.name.into_parts();
+        let (set_description, description) = input.description.into_parts();
+
+        let result = sqlx::query_as!(
             OrgRoleModel,
             r#"
                 UPDATE org_roles
-                SET name = $2,
-                    description = $3,
-                    is_active = $4,
-                    metadata = $5,
-                WHERE id = $1
+                SET name = CASE WHEN $2 THEN $3::text ELSE name END,
+                    description = CASE WHEN $4 THEN $5::text ELSE description END,
+                WHERE org_role_id = $1
             "#,
             id,
-            input.name,
-            input.description,
-            input.is_active,
-            input.metadata,
+            set_name, name,
+            set_description, description,
         )
         .execute(conn)
         .await?;
 
-        Ok(org_role)
+        Ok(result)
     }
 
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool> {
         let result = sqlx::query!(
             r#"
                 DELETE FROM org_roles
-                WHERE id = $1
+                WHERE org_role_id = $1
             "#,
             id
         )

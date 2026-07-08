@@ -164,7 +164,7 @@ impl AuditLogsRepository for PgAuditLogsRepository {
         let result = sqlx::query!(
             r#"
                 DELETE from api_tokens
-                WHERE created_date < $1
+                WHERE created_at < $1
             "#,
             date
         )
