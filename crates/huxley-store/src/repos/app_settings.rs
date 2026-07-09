@@ -109,7 +109,7 @@ impl AppSettingsRepository for PgAppSettingsRepository {
             AppSettingModel,
             r#"
                 UPDATE app_settings
-                SET value = CASE WHEN $2 THEN $3::text ELSE valu END,
+                SET value = CASE WHEN $2 THEN $3::text ELSE value END,
                 WHERE app_set_id = $1
             "#,
             id,

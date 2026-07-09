@@ -78,7 +78,7 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
                 )
                 .fetch_all(conn)
                 .await?
-            },<
+            },
             PageSort::Desc => {
                 sqlx::query_as!(
                     IdentityProviderModel,
@@ -122,10 +122,10 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
                 UPDATE identity_providers
                 SET kind = CASE WHEN $2 THEN $3::text ELSE kind END,
                     name = CASE WHEN $4 THEN $5::text ELSE name END,
-                    slug = CASE WHEN $6 THEN $7::text[] ELSE slug END,
-                    enabled = CASE WHEN $8 THEN $9::timestamptz ELSE enabled END,
-                    config = CASE WHEN $10 THEN $11::timestamptz ELSE config END,
-                    secret_enc = CASE WHEN $12 THEN $13::timestamptz ELSE secret_enc END
+                    slug = CASE WHEN $6 THEN $7::text ELSE slug END,
+                    enabled = CASE WHEN $8 THEN $9::boolean ELSE enabled END,
+                    config = CASE WHEN $10 THEN $11::jsonb ELSE config END,
+                    secret_enc = CASE WHEN $12 THEN $13::bytea ELSE secret_enc END
                 WHERE idp_id = $1
             "#,
             id,

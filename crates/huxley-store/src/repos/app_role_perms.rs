@@ -15,7 +15,6 @@ pub trait AppRolePermsRepository: Send + Sync {
     async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<AppRolePermModel>>;
     async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Vec<AppRolePermModel>>;
     async fn list_by_app_role_id(&self, conn: &mut PgConnection, app_role_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<AppRolePermModel>>;
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateAppRolePerm) -> HuxleyStoreResult<AppRolePermModel>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -155,28 +154,6 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
         };
 
         Ok(Page { items, next_cursor })
-    }
-
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateAppRolePerm) -> HuxleyStoreResult<AppRolePermModel> {
-        let (set_app_role_id, app_role_id) = input.app_role_id.into_parts();
-        let (set_permission, permission) = input.permission.into_parts();
-
-        let result = sqlx::query_as!(
-            AppRolePermModel,
-            r#"
-                UPDATE app_role_perms
-                SET app_role_id = CASE WHEN $2 THEN $3::text ELSE app_role_id END,
-                    prefix = CASE WHEN $4 THEN $5::text ELSE prefix END,
-                WHERE app_role_perm_id = $1
-            "#,
-            id,
-            set_app_role_id, app_role_id,
-            set_permission, permission,
-        )
-        .execute(conn)
-        .await?;
-
-        Ok(result)
     }
 
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool> {

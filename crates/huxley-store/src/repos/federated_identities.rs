@@ -222,10 +222,10 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
             FederatedIdentityModel,
             r#"
                 UPDATE federated_identities
-                SET user_id = CASE WHEN $2 THEN $3::text ELSE user_id END,
-                    idp_id = CASE WHEN $4 THEN $5::text ELSE idp_id END,
-                    subject = CASE WHEN $6 THEN $7::text[] ELSE subject END,
-                    email_at_idp = CASE WHEN $8 THEN $9::timestamptz ELSE email_at_idp END,
+                SET user_id = CASE WHEN $2 THEN $3::uuid ELSE user_id END,
+                    idp_id = CASE WHEN $4 THEN $5::uuid ELSE idp_id END,
+                    subject = CASE WHEN $6 THEN $7::text ELSE subject END,
+                    email_at_idp = CASE WHEN $8 THEN $9::text ELSE email_at_idp END,
                     last_login_at = CASE WHEN $10 THEN $11::timestamptz ELSE last_login_at END,
                 WHERE fedid_id = $1
             "#,

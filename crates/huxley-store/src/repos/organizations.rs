@@ -170,11 +170,11 @@ impl OrganizationsRepository for PgOrganizationsRepository {
             OrganizationModel,
             r#"
                 UPDATE organizations
-                SET parent_id = CASE WHEN $2 THEN $3::text ELSE parent_id END,
+                SET parent_id = CASE WHEN $2 THEN $3::uuid ELSE parent_id END,
                     name = CASE WHEN $4 THEN $5::text ELSE name END,
-                    slug = CASE WHEN $6 THEN $7::text[] ELSE slug END,
-                    status = CASE WHEN $8 THEN $9::timestamptz ELSE status END,
-                    settings = CASE WHEN $10 THEN $11::timestamptz ELSE settings END
+                    slug = CASE WHEN $6 THEN $7::text ELSE slug END,
+                    status = CASE WHEN $8 THEN $9::text ELSE status END,
+                    settings = CASE WHEN $10 THEN $11::jsonb ELSE settings END
                 WHERE org_id = $1
             "#,
             id,
