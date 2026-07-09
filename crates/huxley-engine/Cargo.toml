@@ -8,3 +8,6 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+thiserror = { workspace = true }
+huxley-config = { workspace = true }
+huxley-store = { workspace = true }

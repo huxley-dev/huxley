@@ -4,18 +4,6 @@ use serde::Deserialize;
 
 pub use error::{HuxleyConfigError, HuxleyConfigResult};
 
-#[derive(Debug, Clone, Deserialize, Default)]
-pub struct HuxleyRoles {
-    #[serde(default)]
-    pub api: bool,
-    #[serde(default)]
-    pub scheduler: bool,
-    #[serde(default)]
-    pub worker: bool,
-    #[serde(default)]
-    pub reaper: bool,
-}
-
 #[derive(Debug, Clone, Deserialize)]
 pub struct HuxleyConfig {
     #[serde(rename = "HUXLEY_LOG_LEVEL")]
@@ -24,9 +12,6 @@ pub struct HuxleyConfig {
     #[serde(rename = "HUXLEY_ENVIRONMENT")]
     #[serde(default = "default_environment")]
     pub environment: String,
-    #[serde(rename = "HUXLEY_ROLES")]
-    #[serde(default = "default_roles")]
-    pub roles: HuxleyRoles,
 
     #[serde(rename = "HUXLEY_URL")]
     #[serde(default = "default_url")]
@@ -104,21 +89,12 @@ impl HuxleyConfig {
     pub fn from_env() -> HuxleyConfigResult<HuxleyConfig> {
         dotenvy::dotenv().ok();
         let config: HuxleyConfig = envy::from_env::<HuxleyConfig>()?;
-        config.validate()?;
 
         Ok(config)
     }
 
     pub fn is_production(self) -> bool {
         self.environment == "production"
-    }
-
-    pub fn validate(&self) -> HuxleyConfigResult<()> {
-        if !self.roles.api || self.roles.scheduler || self.roles.worker || self.roles.reaper {
-            return Err(HuxleyConfigError::ValidationError("Atleast one app role must be enabled.".into()))
-        }
-
-        Ok(())
     }
 }
 
@@ -128,10 +104,6 @@ fn default_log_level() -> String {
 
 fn default_environment() -> String {
     "production".into()
-}
-
-fn default_roles() -> HuxleyRoles {
-    HuxleyRoles::default()
 }
 
 fn default_url() -> String {

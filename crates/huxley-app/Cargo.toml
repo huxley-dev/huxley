@@ -9,9 +9,11 @@ rust-version.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-tokio = { workspace = true }
+clap = { workspace = true }
 huxley-api = { workspace = true }
 huxley-config = { workspace = true }
 huxley-core = { workspace = true }
 huxley-engine = { workspace = true }
+huxley-state = { workspace = true }
 huxley-store = { workspace = true }
+tokio = { workspace = true }
