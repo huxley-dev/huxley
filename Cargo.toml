@@ -32,7 +32,6 @@ envy = { version = "0.4.2" }
 huxley-api = { path = "crates/huxley-api" }
 huxley-app = { path = "crates/huxley-app" }
 huxley-config = { path = "crates/huxley-config" }
-huxley-core = { path = "crates/huxley-core" }
 huxley-engine = { path = "crates/huxley-engine" }
 huxley-state = { path = "crates/huxley-state" }
 huxley-store = { path = "crates/huxley-store" }
