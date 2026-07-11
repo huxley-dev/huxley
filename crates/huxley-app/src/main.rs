@@ -4,6 +4,7 @@ use anyhow::Result;
 use futures::future;
 
 use huxley_config::HuxleyConfig;
+use huxley_engine::{scheduler, worker, cleaner};
 use huxley_state::HuxleyState;
 use huxley_store::{postgres, redis};
 use std::sync::Arc;
@@ -30,13 +31,13 @@ async fn main() -> Result<()> {
                 handles.push(tokio::spawn(huxley_api::run(state.clone())));
             },
             "scheduler" => {
-                handles(tokio::spawn(huxley_engine::scheduler::run(state.clone())));
+                handles(tokio::spawn(scheduler::run(state.clone())));
             },
             "worker" => {
-                handles(tokio::spawn(huxley_engine::worker::run(state.clone())));
+                handles(tokio::spawn(worker::run(state.clone())));
             },
-            "reaper" => {
-                handles(tokio::spawn(huxley_engine::reaper::run(state.clone())));
+            "cleaner" => {
+                handles(tokio::spawn(cleaner::run(state.clone())));
             }
             _ => {
 
