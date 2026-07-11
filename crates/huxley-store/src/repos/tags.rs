@@ -76,7 +76,7 @@ impl TagsRepository for PgTagsRepository {
         Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery -> HuxleyStoreResult<Page<TagModel>> {
+    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<TagModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -125,7 +125,7 @@ impl TagsRepository for PgTagsRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn list_by_type(&self, conn: &mut PgConnection, tag_type: i16) -> HuxleyStoreResult<Vec<TagModel>> {
+    async fn list_by_type(&self, conn: &mut PgConnection, tag_type: i16, page: PageQuery) -> HuxleyStoreResult<Page<TagModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {

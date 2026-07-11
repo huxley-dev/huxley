@@ -4,7 +4,6 @@ members = [
     "crates/huxley-api",
     "crates/huxley-app",
     "crates/huxley-config",
-    "crates/huxley-core",
     "crates/huxley-engine",
     "crates/huxley-state",
     "crates/huxley-store",
@@ -45,6 +44,8 @@ testcontainers-modules = { version = "0.15.0", features = ["postgres", "redis"] 
 thiserror = { version = "2.0.18" }
 tokio = { version = "1.52.3", features = ["full"] }
 tokio-test = { version ="0.4.5" }
+tower = { version = "0.5.3" }
+tower-http = { version = "0.7.0", features = ["trace", "cors", "compression-full", "timeout", "limit"] }
 tracing = { version = "0.1.44" }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
 uuid = { version = "1.23.3", features = ["v7", "serde"] }

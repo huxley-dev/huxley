@@ -13,7 +13,7 @@ use crate::{
 pub trait AppRolesRepository: Send + Sync {
     async fn create(&self, conn: &mut PgConnection, input: CreateAppRole) -> HuxleyStoreResult<AppRoleModel>;
     async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<AppRoleModel>>;
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Vec<AppRoleModel>>;
+    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<AppRoleModel>>;
     async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateAppRole) -> HuxleyStoreResult<AppRoleModel>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }

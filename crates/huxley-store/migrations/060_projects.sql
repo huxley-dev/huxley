@@ -1,10 +1,10 @@
 -- ────────────────────────────────────────────────────────────────────────────
--- 060: Workflow Projects
+-- 060: Projects
 -- ────────────────────────────────────────────────────────────────────────────
 
 -- ─── Tables ─────────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS workflow_projects (
-    wf_project_id UUID PRIMARY KEY DEFAULT uuidv7(),
+CREATE TABLE IF NOT EXISTS projects (
+    project_id UUID PRIMARY KEY DEFAULT uuidv7(),
     project_type COLLATE "case_insensitive" TEXT NOT NULL
         CHECK (project_type IN ('org', 'user')),
     org_id UUID REFERENCES org(id) NULL,
@@ -27,10 +27,10 @@ CREATE TABLE IF NOT EXISTS workflow_projects (
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────
-SELECT trigger_updated_at('workflow_projects');
+SELECT trigger_updated_at('projects');
 
 -- ─── Indexes ────────────────────────────────────────────────────────────────
-CREATE INDEX idx_workflow_projects_org_id ON workflow_projects (org_id) WHERE org_id IS NOT NULL;
-CREATE INDEX idx_workflow_projects_user_id ON workflow_projects (user_id) WHERE user_id IS NOT NULL;
-CREATE INDEX idx_workflow_projects_name ON workflow_projects (name);
-CREATE INDEX idx_workflow_projects_slug ON workflow_projects (slug);
+CREATE INDEX idx_projects_org_id ON projects (org_id) WHERE org_id IS NOT NULL;
+CREATE INDEX idx_projects_user_id ON projects (user_id) WHERE user_id IS NOT NULL;
+CREATE INDEX idx_projects_name ON projects (name);
+CREATE INDEX idx_projects_slug ON projects (slug);

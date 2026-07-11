@@ -57,7 +57,7 @@ impl RecoveryCodesRepository for PgRecoveryCodesRepository {
         Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<PageQueryModel>> {
+    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<RecoveryCodeModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -106,7 +106,7 @@ impl RecoveryCodesRepository for PgRecoveryCodesRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn list_by_user_id(&self, conn: &mut PgConnection, user_id: Uuid) -> HuxleyStoreResult<Page<RecoveryCodeModel>> {
+    async fn list_by_user_id(&self, conn: &mut PgConnection, user_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<RecoveryCodeModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {

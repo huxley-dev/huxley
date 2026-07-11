@@ -278,5 +278,4 @@ impl OrgUsersRepository for PgOrgUsersRepository {
             Ok(true)
         }
     }
-    }
 }

@@ -5,6 +5,7 @@ use uuid::Uuid;
 use crate::{
     commands::session::{CreateSession, UpdateSession},
     models::session::SessionModel,
+    common::{Page, PageQuery, PageSort},
     HuxleyStoreResult,
 };
 
@@ -12,7 +13,7 @@ use crate::{
 pub trait SessionsRepository: Send + Sync {
     async fn create(&self, conn: &mut PgConnection, input: CreateSession) -> HuxleyStoreResult<SessionModel>;
     async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<SessionModel>>;
-    async fn list(&self, conn: &mut PgConnection) -> HuxleyStoreResult<Vec<SessionModel>>;
+    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<SessionModel>>;
     async fn list_by_user_id(&self, conn: &mut PgConnection, user_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<SessionModel>>;
     async fn list_by_idp_id(&self, conn: &mut PgConnection, idp_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<SessionModel>>;
     async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateSession) -> HuxleyStoreResult<SessionModel>;
@@ -65,7 +66,7 @@ impl SessionsRepository for PgSessionsRepository {
         Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection, query: PageQuery) -> HuxleyStoreResult<Page<SessionModel>> {
+    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<SessionModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {

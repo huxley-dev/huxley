@@ -14,7 +14,7 @@ pub trait OrganizationsRepository: Send + Sync {
     async fn create(&self, conn: &mut PgConnection, input: CreateOrganization) -> HuxleyStoreResult<OrganizationModel>;
     async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<OrganizationModel>>;
     async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<OrganizationModel>>;
-    async fn list_by_parent_id(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<OrganizationModel>>;
+    async fn list_by_parent_id(&self, conn: &mut PgConnection, parent_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<OrganizationModel>>;
     async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrganization) -> HuxleyStoreResult<OrganizationModel>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }

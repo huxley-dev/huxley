@@ -112,7 +112,7 @@ impl TotpCredentialsRepository for PgTotpCredentialsRepository {
         };
 
         let has_more = result.len() as i64 > resolved_limit;
-        let items: Vec<TotpCredModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<TotpCredentialModel> = result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.totp_cred_id)
         } else {

@@ -18,8 +18,11 @@ serde_json = { workspace = true }
 sqlx = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 uuid = { workspace = true }
 huxley-config = { workspace = true }
+huxley-state = { workspace = true }
 huxley-store = { workspace = true }

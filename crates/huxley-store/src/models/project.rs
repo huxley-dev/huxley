@@ -4,8 +4,8 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 #[derive(Debug, FromRow, Deserialize, Serialize)]
-pub struct WorkflowProjectModel {
-    pub wf_project_id: Uuid,
+pub struct ProjectModel {
+    pub project_id: Uuid,
     pub project_type: String,
     pub org_id: Option<Uuid>,
     pub user_id: Option<Uuid>,

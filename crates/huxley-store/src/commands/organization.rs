@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use crate::common::Field;
 
 pub struct CreateOrganization {
@@ -12,6 +14,6 @@ pub struct UpdateOrganization {
     pub parent_id: Field<Uuid>,
     pub name: Field<String>,
     pub slug: Field<String>,
-    pub state: Field<String>,
+    pub status: Field<String>,
     pub settings: Field<serde_json::Value>,
 }

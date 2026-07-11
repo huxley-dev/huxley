@@ -15,7 +15,7 @@ pub trait VerificationTokensRepository: Send + Sync {
     async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<VerificationTokenModel>>;
     async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<VerificationTokenModel>>;
     async fn list_by_user_id(&self, conn: &mut PgConnection, user_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<VerificationTokenModel>>;
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: VerificationTokenModel) -> HuxleyStoreResult<VerificationTokenModel>;
+    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateVerificationToken) -> HuxleyStoreResult<VerificationTokenModel>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -159,7 +159,7 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
     }
 
     async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateVerificationToken) -> HuxleyStoreResult<VerificationTokenModel> {
-        let (set_used_at, used_at) = input.used_id.into_parts();
+        let (set_used_at, used_at) = input.used_at.into_parts();
 
         let result = sqlx::query_as!(
             VerificationTokenModel,

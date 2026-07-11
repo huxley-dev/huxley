@@ -1,4 +1,4 @@
-use chrono::{Date, DateTime, Utc};
+use chrono::{DateTime, Utc};
 use std::net::IpAddr;
 use uuid::Uuid;
 

@@ -2,7 +2,7 @@ use uuid::Uuid;
 
 use crate::common::Field;
 
-pub struct CreateWorkflowProject {
+pub struct CreateProject {
     pub project_type: String,
     pub org_id: Option<Uuid>,
     pub user_id: Option<Uuid>,
@@ -11,7 +11,7 @@ pub struct CreateWorkflowProject {
     pub description: Option<String>,
 }
 
-pub struct UpdateWorkflowProject {
+pub struct UpdateProject {
     pub name: Field<String>,
     pub slug: Field<String>,
     pub description: Field<String>,

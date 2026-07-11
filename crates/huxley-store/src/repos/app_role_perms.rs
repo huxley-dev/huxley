@@ -3,7 +3,7 @@ use sqlx::PgConnection;
 use uuid::Uuid;
 
 use crate::{
-    commands::app_role_perm::{CreateAppRolePerm, UpdateAppRolePerm},
+    commands::app_role_perm::CreateAppRolePerm,
     models::app_role_perm::AppRolePermModel,
     common::{Page, PageQuery, PageSort},
     HuxleyStoreResult,
@@ -13,7 +13,7 @@ use crate::{
 pub trait AppRolePermsRepository: Send + Sync {
     async fn create(&self, conn: &mut PgConnection, input: CreateAppRolePerm) -> HuxleyStoreResult<AppRolePermModel>;
     async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<AppRolePermModel>>;
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Vec<AppRolePermModel>>;
+    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<AppRolePermModel>>;
     async fn list_by_app_role_id(&self, conn: &mut PgConnection, app_role_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<AppRolePermModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
