@@ -1,5 +1,5 @@
 pub mod error;
-pub mod reaper;
+pub mod cleaner;
 pub mod scheduler;
 pub mod worker;
 
