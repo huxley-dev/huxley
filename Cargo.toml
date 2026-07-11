@@ -16,7 +16,7 @@ edition = "2024"
 homepage = "https://huxley.dev"
 license = "MIT"
 repository = "https://github.com/huxley-dev/huxley"
-rust-version = "1.96.1"
+rust-version = "1.97.0"
 
 [workspace.dependencies]
 anyhow = { version = "1.0.102" }
@@ -43,7 +43,7 @@ sqlx = { version = "0.9.0", features = ["runtime-tokio", "tls-rustls", "postgres
 testcontainers-modules = { version = "0.15.0", features = ["postgres", "redis"] }
 thiserror = { version = "2.0.18" }
 tokio = { version = "1.52.3", features = ["full"] }
-tokio-test = { version ="0.4.5" }
+tokio-test = { version = "0.4.5" }
 tower = { version = "0.5.3" }
 tower-http = { version = "0.7.0", features = ["trace", "cors", "compression-full", "timeout", "limit"] }
 tracing = { version = "0.1.44" }
