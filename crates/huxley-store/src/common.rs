@@ -65,3 +65,11 @@ impl<T> Field<T> {
         }
     }
 }
+
+pub fn to_field<T>(v: Option<Option<T>>) -> Field<T> {
+    match v {
+        None => Field::Keep,
+        Some(None) => Field::SetNull,
+        Some(Some(val)) => Field::Set(val),
+    }
+}

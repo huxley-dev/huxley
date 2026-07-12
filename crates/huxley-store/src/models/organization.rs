@@ -12,5 +12,5 @@ pub struct OrganizationModel {
     pub status: String,
     pub settings: serde_json::Value,
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub updated_at: Option<DateTime<Utc>>,
 }

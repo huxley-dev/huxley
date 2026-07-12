@@ -1,7 +1,7 @@
 use crate::common::Field;
 
 pub struct CreateTag {
-    pub tag_type: i16,
+    pub tag_type: String,
     pub name: String,
     pub bg_color: String,
     pub text_color: String,

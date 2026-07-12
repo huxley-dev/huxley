@@ -48,6 +48,7 @@ tower = { version = "0.5.3" }
 tower-http = { version = "0.7.0", features = ["trace", "cors", "compression-full", "timeout", "limit"] }
 tracing = { version = "0.1.44" }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
+ts-rs = { version = "12.0.1", features = ["serde-json-impl", "chrono-impl", "uuid-impl", "bytes-impl", "tokio-impl"]}
 uuid = { version = "1.23.3", features = ["v7", "serde"] }
 
 [profile.dist]

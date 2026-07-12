@@ -3,7 +3,7 @@ use uuid::Uuid;
 use crate::common::Field;
 
 pub struct CreateOrganization {
-    pub parent_id: Option<String>,
+    pub parent_id: Option<Uuid>,
     pub name: String,
     pub slug: String,
     pub status: String,

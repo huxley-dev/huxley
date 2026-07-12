@@ -8,21 +8,17 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-anyhow = { workspace = true }
 axum = { workspace = true }
-deadpool-redis = { workspace = true }
-redis = { workspace = true }
-rust-embed = { workspace = true }
+chrono = { workspace = true }
+huxley-config = { workspace = true }
+huxley-state = { workspace = true }
+huxley-store = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-sqlx = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true }
 tower = { workspace = true }
 tower-http = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+ts-rs = { workspace = true }
 uuid = { workspace = true }
-huxley-config = { workspace = true }
-huxley-state = { workspace = true }
-huxley-store = { workspace = true }
