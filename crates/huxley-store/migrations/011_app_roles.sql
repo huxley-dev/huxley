@@ -2,6 +2,8 @@
 -- 011: App Roles
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS app_roles (
     app_role_id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -9,7 +11,7 @@ CREATE TABLE IF NOT EXISTS app_roles (
     description TEXT,
     built_in BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────

@@ -2,13 +2,15 @@
 -- 060: Projects
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS projects (
     project_id UUID PRIMARY KEY DEFAULT uuidv7(),
-    project_type COLLATE "case_insensitive" TEXT NOT NULL
+    project_type TEXT COLLATE "case_insensitive" NOT NULL
         CHECK (project_type IN ('org', 'user')),
-    org_id UUID REFERENCES org(id) NULL,
-    user_id UUID REFERENCES user(id) NULL,
+    org_id UUID REFERENCES organizations(org_id) NULL,
+    user_id UUID REFERENCES users(user_id) NULL,
     name TEXT COLLATE "case_insensitive" NOT NULL,
     slug TEXT COLLATE "case_insensitive" NOT NULL,
     description TEXT NULL,
@@ -23,7 +25,7 @@ CREATE TABLE IF NOT EXISTS projects (
     CONSTRAINT unique_project_name_per_org UNIQUE (name, org_id),
     CONSTRAINT unique_project_slug_per_org UNIQUE (slug, org_id),
     CONSTRAINT unique_project_name_per_user UNIQUE (name, user_id),
-    CONSTRAINT unique_project_slug_per_user UNIQUE (slug, user_id),
+    CONSTRAINT unique_project_slug_per_user UNIQUE (slug, user_id)
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────

@@ -2,6 +2,8 @@
 -- 033: Identity Providers
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS identity_providers (
     idp_id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -13,7 +15,7 @@ CREATE TABLE IF NOT EXISTS identity_providers (
     config JSONB NOT NULL DEFAULT '{}'::jsonb,
     secret_enc BYTEA,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────

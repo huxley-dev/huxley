@@ -2,6 +2,8 @@
 -- 020: Users
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS users (
     user_id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -14,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     preferences JSONB NOT NULL DEFAULT '{}'::jsonb,
     app_role_id UUID NOT NULL REFERENCES app_roles(app_role_id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────

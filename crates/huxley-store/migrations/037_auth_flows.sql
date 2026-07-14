@@ -2,6 +2,8 @@
 -- 037: Auth Flows
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS auth_flows (
     auth_flow_id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -13,7 +15,7 @@ CREATE TABLE IF NOT EXISTS auth_flows (
     redirect_to TEXT,
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────

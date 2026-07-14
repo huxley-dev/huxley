@@ -2,6 +2,8 @@
 -- 035: API Tokens
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS api_tokens (
     api_token_id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -14,7 +16,7 @@ CREATE TABLE IF NOT EXISTS api_tokens (
     expires_at TIMESTAMPTZ,
     revoked_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────

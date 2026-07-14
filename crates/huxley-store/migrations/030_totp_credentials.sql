@@ -2,6 +2,8 @@
 -- 030: TOTP Credentials
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS totp_credentials (
     totp_cred_id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -11,7 +13,7 @@ CREATE TABLE IF NOT EXISTS totp_credentials (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ,
 
-    UNIQUE (user_id),
+    UNIQUE (user_id)
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────

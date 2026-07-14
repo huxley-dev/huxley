@@ -2,6 +2,8 @@
 -- 065: Variables
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS variables (
     var_id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -12,7 +14,7 @@ CREATE TABLE IF NOT EXISTS variables (
     value TEXT NULL,
     inheritable BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    update_at TIMESTAMPTZ,
+    update_at TIMESTAMPTZ
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────
@@ -20,4 +22,4 @@ SELECT trigger_updated_at('variables');
 
 -- ─── Indexes ────────────────────────────────────────────────────────────────
 CREATE INDEX idx_variables_name ON variables (name);
-CREATE INDEX idx_variables_inheritable ON variables (heritable);
+CREATE INDEX idx_variables_inheritable ON variables (inheritable);

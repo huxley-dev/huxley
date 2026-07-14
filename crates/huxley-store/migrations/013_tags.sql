@@ -2,6 +2,8 @@
 -- 013: Tags
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS tags (
     tag_id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -13,7 +15,7 @@ CREATE TABLE IF NOT EXISTS tags (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ,
 
-    UNIQUE (tag_type, name),
+    UNIQUE (tag_type, name)
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────

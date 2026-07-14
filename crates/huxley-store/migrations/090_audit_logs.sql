@@ -2,6 +2,8 @@
 -- 090: Audit Logs
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS audit_logs (
     aud_log_id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -12,7 +14,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     ip INET,
     user_agent TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────

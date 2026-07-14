@@ -2,6 +2,8 @@
 -- 031: WebAuthN Credentials
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS webauthn_credentials (
     wauthn_cred_id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -14,7 +16,7 @@ CREATE TABLE IF NOT EXISTS webauthn_credentials (
     transports TEXT[],
     last_used_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────

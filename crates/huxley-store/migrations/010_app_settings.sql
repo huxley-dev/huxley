@@ -2,13 +2,15 @@
 -- 010: App Settings
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS app_settings (
     app_set_id UUID PRIMARY KEY DEFAULT uuidv7(),
     name TEXT COLLATE "case_insensitive" NOT NULL,
     value TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────

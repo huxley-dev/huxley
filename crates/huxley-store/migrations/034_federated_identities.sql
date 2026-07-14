@@ -2,6 +2,8 @@
 -- 034: Federated Identities
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS federated_identities (
     fedid_id UUID PRIMARY KEY DEFAULT uuidv7(),

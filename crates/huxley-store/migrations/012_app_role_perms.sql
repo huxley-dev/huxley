@@ -2,6 +2,8 @@
 -- 012: App Role Perms
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS app_role_perms (
     app_role_perm_id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -9,11 +11,11 @@ CREATE TABLE IF NOT EXISTS app_role_perms (
     permission TEXT NOT NULL,
     built_in BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────
 SELECT trigger_updated_at('app_role_perms');
 
 -- ─── Indexes ────────────────────────────────────────────────────────────────
-CREATE INDEX idx_app_role_perms_name ON app_role_perms (name);
+CREATE INDEX idx_app_role_perms_name ON app_role_perms (permission);

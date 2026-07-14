@@ -2,6 +2,8 @@
 -- 032: Recovery Codes
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS recovery_codes (
     rec_code_id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -9,7 +11,7 @@ CREATE TABLE IF NOT EXISTS recovery_codes (
     code_hash BYTEA NOT NULL,
     used_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────

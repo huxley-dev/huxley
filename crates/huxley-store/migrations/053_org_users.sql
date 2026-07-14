@@ -2,6 +2,8 @@
 -- 053: Org Users
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS org_users (
     org_user_id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -11,7 +13,7 @@ CREATE TABLE IF NOT EXISTS org_users (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ,
 
-    UNIQUE (org_role_id, user_id),
+    UNIQUE (org_role_id, user_id)
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────

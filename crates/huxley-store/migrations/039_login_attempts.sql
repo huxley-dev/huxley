@@ -2,6 +2,8 @@
 -- 039: Login Attempts
 -- ────────────────────────────────────────────────────────────────────────────
 
+SET lock_timeout = 5000;
+
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS login_attempts (
     login_attempt_id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -11,7 +13,7 @@ CREATE TABLE IF NOT EXISTS login_attempts (
     user_agent TEXT,
     successful BOOLEAN NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────
