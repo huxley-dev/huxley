@@ -1,8 +1,8 @@
 use uuid::Uuid;
 
-const PAGE_LIMIT_DEFAULT: i64 = 50;
-const PAGE_LIMIT_MIN: i64 = 5;
-const PAGE_LIMIT_MAX: i64 = 100;
+const PAGE_LIMIT_DEFAULT: i32 = 50;
+const PAGE_LIMIT_MIN: i32 = 5;
+const PAGE_LIMIT_MAX: i32 = 100;
 
 pub struct Page<T> {
     pub items: Vec<T>,
@@ -21,8 +21,8 @@ impl Default for PageSort {
     }
 }
 pub struct PageQuery {
-    pub limit: Option<i64>,
-    pub cursor: Option<Uuid>,
+    pub limit: Option<i32>,
+    pub next_cursor: Option<Uuid>,
     pub sort: Option<PageSort>,
 }
 
@@ -37,8 +37,10 @@ impl Default for PageQuery {
 }
 
 impl PageQuery {
-    pub fn resolved_limit(&self) -> i64 {
-        self.limit.unwrap_or(PAGE_LIMIT_DEFAULT).clamp(PAGE_LIMIT_MIN, PAGE_LIMIT_MAX)
+    pub fn resolved_limit(&self) -> i32 {
+        self.limit
+            .unwrap_or(PAGE_LIMIT_DEFAULT)
+            .clamp(PAGE_LIMIT_MIN, PAGE_LIMIT_MAX)
     }
 
     pub fn resolved_sort(&self) -> PageSort {
@@ -53,7 +55,9 @@ pub enum Field<T> {
 }
 
 impl<T> Default for Field<T> {
-    fn default() -> Self { Field::Keep }
+    fn default() -> Self {
+        Field::Keep
+    }
 }
 
 impl<T> Field<T> {

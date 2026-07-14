@@ -7,7 +7,7 @@ SET lock_timeout = 5000;
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS folders (
     folder_id UUID PRIMARY KEY DEFAULT uuidv7(),
-    project_id UUID REFERENCES projects(project_id) ON DELETE CASCADE,
+    project_id UUID NOT NULL REFERENCES projects(project_id) ON DELETE CASCADE,
     parent_id UUID REFERENCES folders(folder_id) ON DELETE SET NULL,
     name TEXT COLLATE "case_insensitive" NOT NULL,
     slug TEXT COLLATE "case_insensitive" NOT NULL,

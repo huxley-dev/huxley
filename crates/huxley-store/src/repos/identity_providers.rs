@@ -3,18 +3,35 @@ use sqlx::PgConnection;
 use uuid::Uuid;
 
 use crate::{
-    commands::identity_provider::{CreateIdentityProvider, UpdateIdentityProvider},
-    models::identity_provider::IdentityProviderModel,
-    common::{Page, PageQuery, PageSort},
     HuxleyStoreResult,
+    commands::identity_provider::{CreateIdentityProvider, UpdateIdentityProvider},
+    common::{Page, PageQuery, PageSort},
+    models::identity_provider::IdentityProviderModel,
 };
 
 #[async_trait]
 pub trait IdentityProvidersRepository: Send + Sync {
-    async fn create(&self, conn: &mut PgConnection, input: CreateIdentityProvider) -> HuxleyStoreResult<IdentityProviderModel>;
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<IdentityProviderModel>>;
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<IdentityProviderModel>>;
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateIdentityProvider) -> HuxleyStoreResult<IdentityProviderModel>;
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateIdentityProvider,
+    ) -> HuxleyStoreResult<IdentityProviderModel>;
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<IdentityProviderModel>>;
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<IdentityProviderModel>>;
+    async fn update(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+        input: UpdateIdentityProvider,
+    ) -> HuxleyStoreResult<Option<IdentityProviderModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -22,20 +39,24 @@ pub struct PgIdentityProvidersRepository;
 
 #[async_trait]
 impl IdentityProvidersRepository for PgIdentityProvidersRepository {
-    async fn create(&self, conn: &mut PgConnection, input: CreateIdentityProvider) -> HuxleyStoreResult<IdentityProviderModel> {
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateIdentityProvider,
+    ) -> HuxleyStoreResult<IdentityProviderModel> {
         let result = sqlx::query_as!(
             IdentityProviderModel,
             r#"
                 INSERT INTO identity_providers (kind, name, slug, enabled, config, secret_enc)
                 VALUES ($1, $2, $3, $4, $5, $6)
-                RETURNING idp_id, kind, name, slug, enabled, config, created_at, updated_at
+                RETURNING idp_id, kind, name, slug, enabled, config, secret_enc, created_at, updated_at
             "#,
             input.kind,
             input.name,
             input.slug,
             input.enabled,
             input.config,
-            input.secret_enc,
+            &input.secret_enc,
         )
         .fetch_one(conn)
         .await?;
@@ -43,7 +64,11 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
         Ok(result)
     }
 
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<IdentityProviderModel>> {
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<IdentityProviderModel>> {
         let result = sqlx::query_as!(
             IdentityProviderModel,
             r#"
@@ -59,7 +84,11 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
         Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<IdentityProviderModel>> {
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<IdentityProviderModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -78,7 +107,7 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
                 )
                 .fetch_all(conn)
                 .await?
-            },
+            }
             PageSort::Desc => {
                 sqlx::query_as!(
                     IdentityProviderModel,
@@ -98,7 +127,8 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
         };
 
         let has_more = result.len() as i64 > resolved_limit;
-        let items: Vec<IdentityProviderModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<IdentityProviderModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.idp_id)
         } else {
@@ -108,7 +138,12 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateIdentityProvider) -> HuxleyStoreResult<IdentityProviderModel> {
+    async fn update(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+        input: UpdateIdentityProvider,
+    ) -> HuxleyStoreResult<IdentityProviderModel> {
         let (set_kind, kind) = input.kind.into_parts();
         let (set_name, name) = input.name.into_parts();
         let (set_slug, slug) = input.slug.into_parts();
@@ -129,12 +164,18 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
                 WHERE idp_id = $1
             "#,
             id,
-            set_kind, kind,
-            set_name, name,
-            set_slug, slug,
-            set_enabled, enabled,
-            set_config, config,
-            set_secret_enc, secret_enc,
+            set_kind,
+            kind,
+            set_name,
+            name,
+            set_slug,
+            slug,
+            set_enabled,
+            enabled,
+            set_config,
+            config,
+            set_secret_enc,
+            secret_enc,
         )
         .execute(conn)
         .await?;

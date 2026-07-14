@@ -3,20 +3,47 @@ use sqlx::PgConnection;
 use uuid::Uuid;
 
 use crate::{
-    commands::federated_identity::{CreateFederatedIdentity, UpdateFederatedIdentity},
-    models::federated_identity::FederatedIdentityModel,
-    common::{Page, PageQuery, PageSort},
     HuxleyStoreResult,
+    commands::federated_identity::{CreateFederatedIdentity, UpdateFederatedIdentity},
+    common::{Page, PageQuery, PageSort},
+    models::federated_identity::FederatedIdentityModel,
 };
 
 #[async_trait]
 pub trait FederatedIdentitiesRepository: Send + Sync {
-    async fn create(&self, conn: &mut PgConnection, input: CreateFederatedIdentity) -> HuxleyStoreResult<FederatedIdentityModel>;
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<FederatedIdentityModel>>;
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<FederatedIdentityModel>>;
-    async fn list_by_user_id(&self, conn: &mut PgConnection, user_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<FederatedIdentityModel>>;
-    async fn list_by_idp_id(&self, conn: &mut PgConnection, idp_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<FederatedIdentityModel>>;
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateFederatedIdentity) -> HuxleyStoreResult<FederatedIdentityModel>;
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateFederatedIdentity,
+    ) -> HuxleyStoreResult<FederatedIdentityModel>;
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<FederatedIdentityModel>>;
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<FederatedIdentityModel>>;
+    async fn list_by_user_id(
+        &self,
+        conn: &mut PgConnection,
+        user_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<FederatedIdentityModel>>;
+    async fn list_by_idp_id(
+        &self,
+        conn: &mut PgConnection,
+        idp_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<FederatedIdentityModel>>;
+    async fn update(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+        input: UpdateFederatedIdentity,
+    ) -> HuxleyStoreResult<Option<FederatedIdentityModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -24,7 +51,11 @@ pub struct PgFederatedIdentitiesRepository;
 
 #[async_trait]
 impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
-    async fn create(&self, conn: &mut PgConnection, input: CreateFederatedIdentity) -> HuxleyStoreResult<FederatedIdentityModel> {
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateFederatedIdentity,
+    ) -> HuxleyStoreResult<FederatedIdentityModel> {
         let result = sqlx::query_as!(
             FederatedIdentityModel,
             r#"
@@ -44,7 +75,11 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         Ok(result)
     }
 
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<FederatedIdentityModel>> {
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<FederatedIdentityModel>> {
         let result = sqlx::query_as!(
             FederatedIdentityModel,
             r#"
@@ -60,7 +95,11 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<FederatedIdentityModel>> {
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<FederatedIdentityModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -70,7 +109,7 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
                     r#"
                         SELECT fedid_id, user_id, idp_id, subject, email_at_idp, last_login_at, created_at, updated_at
                         FROM federated_identities
-                        WHERE ($2::bigint IS NULL OR fedid_id >= $2)
+                        WHERE ($2::uuid IS NULL OR fedid_id >= $2)
                         ORDER BY fedid_id ASC
                         LIMIT $1 + 1
                     "#,
@@ -86,7 +125,7 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
                     r#"
                         SELECT fedid_id, user_id, idp_id, subject, email_at_idp, last_login_at, created_at, updated_at
                         FROM federated_identities
-                        WHERE ($2::bigint IS NULL OR fedid_id <= $2)
+                        WHERE ($2::uuid IS NULL OR fedid_id <= $2)
                         ORDER BY fedid_id DESC
                         LIMIT $1 + 1
                     "#,
@@ -98,8 +137,9 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
-        let items: Vec<FederatedIdentityModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let has_more = result.len() as i32 > resolved_limit;
+        let items: Vec<FederatedIdentityModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.fedid_id)
         } else {
@@ -109,7 +149,12 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn list_by_user_id(&self, conn: &mut PgConnection, user_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<FederatedIdentityModel>> {
+    async fn list_by_user_id(
+        &self,
+        conn: &mut PgConnection,
+        user_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<FederatedIdentityModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -119,13 +164,13 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
                     r#"
                         SELECT fedid_id, user_id, idp_id, subject, email_at_idp, last_login_at, created_at, updated_at
                         FROM federated_identities
-                        WHERE ($2::bigint IS NULL OR fedid_id >= $2) AND (user_id = $3)
+                        WHERE ($2::uuid IS NULL OR fedid_id >= $2) AND (user_id = $3)
                         ORDER BY fedid_id ASC
                         LIMIT $1 + 1
                     "#,
                     resolved_limit,
                     page.next_cursor,
-                    id,
+                    user_id,
                 )
                 .fetch_all(conn)
                 .await?
@@ -136,21 +181,22 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
                     r#"
                         SELECT fedid_id, user_id, idp_id, subject, email_at_idp, last_login_at, created_at, updated_at
                         FROM federated_identities
-                        WHERE ($2::bigint IS NULL OR fedid_id <= $2) AND (user_id = $3)
+                        WHERE ($2::uuid IS NULL OR fedid_id <= $2) AND (user_id = $3)
                         ORDER BY fedid_id DESC
                         LIMIT $1 + 1
                     "#,
                     resolved_limit,
                     page.next_cursor,
-                    id,
+                    user_id,
                 )
                 .fetch_all(conn)
                 .await?
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
-        let items: Vec<FederatedIdentityModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let has_more = result.len() as i32 > resolved_limit;
+        let items: Vec<FederatedIdentityModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.fedid_id)
         } else {
@@ -160,7 +206,12 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn list_by_idp_id(&self, conn: &mut PgConnection, idp_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<FederatedIdentityModel>> {
+    async fn list_by_idp_id(
+        &self,
+        conn: &mut PgConnection,
+        idp_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<FederatedIdentityModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -170,13 +221,13 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
                     r#"
                         SELECT fedid_id, user_id, idp_id, subject, email_at_idp, last_login_at, created_at, updated_at
                         FROM federated_identities
-                        WHERE ($2::bigint IS NULL OR fedid_id >= $2) AND (fedid_id = $3)
+                        WHERE ($2::uuid IS NULL OR fedid_id >= $2) AND (fedid_id = $3)
                         ORDER BY fedid_id ASC
                         LIMIT $1 + 1
                     "#,
                     resolved_limit,
                     page.next_cursor,
-                    id,
+                    idp_id,
                 )
                 .fetch_all(conn)
                 .await?
@@ -187,21 +238,22 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
                     r#"
                         SELECT fedid_id, user_id, idp_id, subject, email_at_idp, last_login_at, created_at, updated_at
                         FROM federated_identities
-                        WHERE ($2::bigint IS NULL OR fedid_id <= $2) AND (fedid_id = $3)
+                        WHERE ($2::uuid IS NULL OR fedid_id <= $2) AND (fedid_id = $3)
                         ORDER BY fedid_id DESC
                         LIMIT $1 + 1
                     "#,
                     resolved_limit,
                     page.next_cursor,
-                    id,
+                    idp_id,
                 )
                 .fetch_all(conn)
                 .await?
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
-        let items: Vec<FederatedIdentityModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let has_more = result.len() as i32 > resolved_limit;
+        let items: Vec<FederatedIdentityModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.fedid_id)
         } else {
@@ -211,7 +263,12 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateFederatedIdentity) -> HuxleyStoreResult<FederatedIdentityModel> {
+    async fn update(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+        input: UpdateFederatedIdentity,
+    ) -> HuxleyStoreResult<Option<FederatedIdentityModel>> {
         let (set_user_id, user_id) = input.user_id.into_parts();
         let (set_idp_id, idp_id) = input.idp_id.into_parts();
         let (set_subject, subject) = input.subject.into_parts();
@@ -226,17 +283,23 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
                     idp_id = CASE WHEN $4 THEN $5::uuid ELSE idp_id END,
                     subject = CASE WHEN $6 THEN $7::text ELSE subject END,
                     email_at_idp = CASE WHEN $8 THEN $9::text ELSE email_at_idp END,
-                    last_login_at = CASE WHEN $10 THEN $11::timestamptz ELSE last_login_at END,
+                    last_login_at = CASE WHEN $10 THEN $11::timestamptz ELSE last_login_at END
                 WHERE fedid_id = $1
+                RETURNING fedid_id, user_id, idp_id, subject, email_at_idp, last_login_at, created_at, updated_at
             "#,
             id,
-            set_user_id, user_id,
-            set_idp_id, idp_id,
-            set_subject, subject,
-            set_email_at_idp, email_at_idp,
-            set_last_login_at, last_login_at,
+            set_user_id,
+            user_id,
+            set_idp_id,
+            idp_id,
+            set_subject,
+            subject,
+            set_email_at_idp,
+            email_at_idp,
+            set_last_login_at,
+            last_login_at,
         )
-        .execute(conn)
+        .fetch_optional(conn)
         .await?;
 
         Ok(result)

@@ -3,18 +3,35 @@ use sqlx::PgConnection;
 use uuid::Uuid;
 
 use crate::{
-    commands::app_role_perm::CreateAppRolePerm,
-    models::app_role_perm::AppRolePermModel,
-    common::{Page, PageQuery, PageSort},
     HuxleyStoreResult,
+    commands::app_role_perm::CreateAppRolePerm,
+    common::{Page, PageQuery, PageSort},
+    models::app_role_perm::AppRolePermModel,
 };
 
 #[async_trait]
 pub trait AppRolePermsRepository: Send + Sync {
-    async fn create(&self, conn: &mut PgConnection, input: CreateAppRolePerm) -> HuxleyStoreResult<AppRolePermModel>;
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<AppRolePermModel>>;
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<AppRolePermModel>>;
-    async fn list_by_app_role_id(&self, conn: &mut PgConnection, app_role_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<AppRolePermModel>>;
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateAppRolePerm,
+    ) -> HuxleyStoreResult<AppRolePermModel>;
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<AppRolePermModel>>;
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<AppRolePermModel>>;
+    async fn list_by_app_role_id(
+        &self,
+        conn: &mut PgConnection,
+        app_role_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<AppRolePermModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -22,7 +39,11 @@ pub struct PgAppRolePermsRepository;
 
 #[async_trait]
 impl AppRolePermsRepository for PgAppRolePermsRepository {
-    async fn create(&self, conn: &mut PgConnection, input: CreateAppRolePerm) -> HuxleyStoreResult<AppRolePermModel> {
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateAppRolePerm,
+    ) -> HuxleyStoreResult<AppRolePermModel> {
         let result = sqlx::query_as!(
             AppRolePermModel,
             r#"
@@ -39,7 +60,11 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
         Ok(result)
     }
 
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<AppRolePermModel>> {
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<AppRolePermModel>> {
         let result = sqlx::query_as!(
             AppRolePermModel,
             r#"
@@ -55,7 +80,11 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
         Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<AppRolePermModel>> {
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<AppRolePermModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -65,8 +94,8 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
                     r#"
                         SELECT app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
                         FROM app_role_perms
-                        WHERE ($2::bigint IS NULL OR app_role_perm_id >= $2)
-                        ORDER_BY app_role_perm_id ASC
+                        WHERE ($2::uuid IS NULL OR app_role_perm_id >= $2)
+                        ORDER BY app_role_perm_id ASC
                         LIMIT $1 + 1
                     "#,
                     resolved_limit,
@@ -81,8 +110,8 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
                     r#"
                         SELECT app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
                         FROM app_role_perms
-                        WHERE ($2::bigint IS NULL OR app_role_perm_id <= $2)
-                        ORDER_BY app_role_perm_id DESC
+                        WHERE ($2::uuid IS NULL OR app_role_perm_id <= $2)
+                        ORDER BY app_role_perm_id DESC
                         LIMIT $1 + 1
                     "#,
                     resolved_limit,
@@ -93,8 +122,9 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
             },
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
-        let items: Vec<AppRolePermModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let has_more = result.len() as i32 > resolved_limit;
+        let items: Vec<AppRolePermModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.app_role_perm_id)
         } else {
@@ -104,8 +134,12 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
         Ok(Page { items, next_cursor })
     }
 
-
-    async fn list_by_app_role_id(&self, conn: &mut PgConnection, app_role_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<AppRolePermModel>> {
+    async fn list_by_app_role_id(
+        &self,
+        conn: &mut PgConnection,
+        app_role_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<AppRolePermModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -115,8 +149,8 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
                     r#"
                         SELECT app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
                         FROM app_role_perms
-                        WHERE ($2::bigint IS NULL OR app_role_perm_id >= $2) AND (app_role_id = $3)
-                        ORDER_BY app_role_perm_id ASC
+                        WHERE ($2::uuid IS NULL OR app_role_perm_id >= $2) AND (app_role_id = $3)
+                        ORDER BY app_role_perm_id ASC
                         LIMIT $1 + 1
                     "#,
                     resolved_limit,
@@ -132,8 +166,8 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
                     r#"
                         SELECT app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
                         FROM app_role_perms
-                        WHERE ($2::bigint IS NULL OR app_role_perm_id <= $2) AND (app_role_id = $3)
-                        ORDER_BY app_role_perm_id DESC
+                        WHERE ($2::uuid IS NULL OR app_role_perm_id <= $2) AND (app_role_id = $3)
+                        ORDER BY app_role_perm_id DESC
                         LIMIT $1 + 1
                     "#,
                     resolved_limit,
@@ -145,8 +179,9 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
             },
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
-        let items: Vec<AppRolePermModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let has_more = result.len() as i32 > resolved_limit;
+        let items: Vec<AppRolePermModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.app_role_perm_id)
         } else {
@@ -162,7 +197,7 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
                 DELETE FROM app_role_perms
                 WHERE app_role_perm_id = $1
             "#,
-            app_role_perm_id
+            id
         )
         .execute(conn)
         .await?;

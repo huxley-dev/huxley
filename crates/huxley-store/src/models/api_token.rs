@@ -11,7 +11,7 @@ pub struct ApiTokenModel {
     pub prefix: String,
     pub token_hash: Vec<u8>,
     pub scopes: Vec<String>,
-    pub last_seen_at: Option<DateTime<Utc>>,
+    pub last_used_at: Option<DateTime<Utc>>,
     pub expires_at: Option<DateTime<Utc>>,
     pub revoked_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,

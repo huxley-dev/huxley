@@ -3,25 +3,46 @@ use sqlx::PgConnection;
 use uuid::Uuid;
 
 use crate::{
-    commands::app_setting::UpdateAppSetting,
-    models::app_setting::AppSettingModel,
-    common::{Page, PageQuery, PageSort},
     HuxleyStoreResult,
+    commands::app_setting::UpdateAppSetting,
+    common::{Page, PageQuery, PageSort},
+    models::app_setting::AppSettingModel,
 };
 
 #[async_trait]
 pub trait AppSettingsRepository: Send + Sync {
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<AppSettingModel>>;
-    async fn find_by_name(&self, conn: &mut PgConnection, name: &str) -> HuxleyStoreResult<Option<AppSettingModel>>;
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<AppSettingModel>>;
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateAppSetting) -> HuxleyStoreResult<AppSettingModel>;
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<AppSettingModel>>;
+    async fn find_by_name(
+        &self,
+        conn: &mut PgConnection,
+        name: &str,
+    ) -> HuxleyStoreResult<Option<AppSettingModel>>;
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<AppSettingModel>>;
+    async fn update(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+        input: UpdateAppSetting,
+    ) -> HuxleyStoreResult<Option<AppSettingModel>>;
 }
 
 pub struct PgAppSettingsRepository;
 
 #[async_trait]
 impl AppSettingsRepository for PgAppSettingsRepository {
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<AppSettingModel>> {
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<AppSettingModel>> {
         let result = sqlx::query_as!(
             AppSettingModel,
             r#"
@@ -37,7 +58,11 @@ impl AppSettingsRepository for PgAppSettingsRepository {
         Ok(result)
     }
 
-    async fn find_by_name(&self, conn: &mut PgConnection, name: &str) -> HuxleyStoreResult<Option<AppSettingModel>> {
+    async fn find_by_name(
+        &self,
+        conn: &mut PgConnection,
+        name: &str,
+    ) -> HuxleyStoreResult<Option<AppSettingModel>> {
         let result = sqlx::query_as!(
             AppSettingModel,
             r#"
@@ -45,7 +70,7 @@ impl AppSettingsRepository for PgAppSettingsRepository {
                 FROM app_settings
                 WHERE name = $1
             "#,
-            id
+            name
         )
         .fetch_optional(conn)
         .await?;
@@ -53,7 +78,11 @@ impl AppSettingsRepository for PgAppSettingsRepository {
         Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<AppSettingModel>> {
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<AppSettingModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -63,7 +92,7 @@ impl AppSettingsRepository for PgAppSettingsRepository {
                     r#"
                         SELECT app_set_id, name, value, created_at, updated_at
                         FROM app_settings
-                        WHERE ($2::bigint IS NULL OR app_set_id >= $2)
+                        WHERE ($2::uuid IS NULL OR app_set_id >= $2)
                         ORDER BY app_set_id ASC
                         LIMIT $1 + 1
                     "#,
@@ -72,14 +101,14 @@ impl AppSettingsRepository for PgAppSettingsRepository {
                 )
                 .fetch_all(conn)
                 .await?
-            },
+            }
             PageSort::Desc => {
                 sqlx::query_as!(
                     AppSettingModel,
                     r#"
                         SELECT app_set_id, name, value, created_at, updated_at
                         FROM app_settings
-                        WHERE ($2::bigint IS NULL OR app_set_id <= $2)
+                        WHERE ($2::uuid IS NULL OR app_set_id <= $2)
                         ORDER BY app_set_id DESC
                         LIMIT $1 + 1
                     "#,
@@ -91,8 +120,9 @@ impl AppSettingsRepository for PgAppSettingsRepository {
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
-        let items: Vec<AppSettingModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let has_more = result.len() as i32 > resolved_limit;
+        let items: Vec<AppSettingModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.app_set_id)
         } else {
@@ -102,20 +132,27 @@ impl AppSettingsRepository for PgAppSettingsRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateAppSetting) -> HuxleyStoreResult<AppSettingModel> {
+    async fn update(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+        input: UpdateAppSetting,
+    ) -> HuxleyStoreResult<Option<AppSettingModel>> {
         let (set_value, value) = input.value.into_parts();
 
         let result = sqlx::query_as!(
             AppSettingModel,
             r#"
                 UPDATE app_settings
-                SET value = CASE WHEN $2 THEN $3::text ELSE value END,
+                SET value = CASE WHEN $2 THEN $3::text ELSE value END
                 WHERE app_set_id = $1
+                RETURNING app_set_id, name, value, created_at, updated_at
             "#,
             id,
-            set_value, value,
+            set_value,
+            value,
         )
-        .execute(conn)
+        .fetch_optional(conn)
         .await?;
 
         Ok(result)

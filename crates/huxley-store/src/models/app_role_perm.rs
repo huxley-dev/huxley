@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 #[derive(Debug, FromRow, Deserialize, Serialize)]
 pub struct AppRolePermModel {
-    pub id: Uuid,
+    pub app_role_perm_id: Uuid,
     pub app_role_id: Uuid,
     pub permission: String,
     pub built_in: bool,
