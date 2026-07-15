@@ -30,7 +30,7 @@ impl Default for PageQuery {
     fn default() -> Self {
         Self {
             limit: Some(PAGE_LIMIT_DEFAULT),
-            cursor: None,
+            next_cursor: None,
             sort: Some(PageSort::Asc),
         }
     }

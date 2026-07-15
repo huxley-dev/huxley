@@ -3,19 +3,41 @@ use sqlx::PgConnection;
 use uuid::Uuid;
 
 use crate::{
-    commands::verification_token::{CreateVerificationToken, UpdateVerificationToken},
-    models::verification_token::VerificationTokenModel,
-    common::{Page, PageQuery, PageSort},
     HuxleyStoreResult,
+    commands::verification_token::{CreateVerificationToken, UpdateVerificationToken},
+    common::{Page, PageQuery, PageSort},
+    models::verification_token::VerificationTokenModel,
 };
 
 #[async_trait]
 pub trait VerificationTokensRepository: Send + Sync {
-    async fn create(&self, conn: &mut PgConnection, input: CreateVerificationToken) -> HuxleyStoreResult<VerificationTokenModel>;
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<VerificationTokenModel>>;
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<VerificationTokenModel>>;
-    async fn list_by_user_id(&self, conn: &mut PgConnection, user_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<VerificationTokenModel>>;
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateVerificationToken) -> HuxleyStoreResult<VerificationTokenModel>;
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateVerificationToken,
+    ) -> HuxleyStoreResult<VerificationTokenModel>;
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<VerificationTokenModel>>;
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<VerificationTokenModel>>;
+    async fn list_by_user_id(
+        &self,
+        conn: &mut PgConnection,
+        user_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<VerificationTokenModel>>;
+    async fn update(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+        input: UpdateVerificationToken,
+    ) -> HuxleyStoreResult<Option<VerificationTokenModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -23,7 +45,11 @@ pub struct PgVerificationTokensRepository;
 
 #[async_trait]
 impl VerificationTokensRepository for PgVerificationTokensRepository {
-    async fn create(&self, conn: &mut PgConnection, input: CreateVerificationToken) -> HuxleyStoreResult<VerificationTokenModel> {
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateVerificationToken,
+    ) -> HuxleyStoreResult<VerificationTokenModel> {
         let result = sqlx::query_as!(
             VerificationTokenModel,
             r#"
@@ -42,7 +68,11 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
         Ok(result)
     }
 
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<VerificationTokenModel>> {
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<VerificationTokenModel>> {
         let result = sqlx::query_as!(
             VerificationTokenModel,
             r#"
@@ -58,7 +88,11 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
         Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<VerificationTokenModel>> {
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<VerificationTokenModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -68,7 +102,7 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
                     r#"
                         SELECT ver_token_id, user_id, purpose, token_hash, used_at, created_at, updated_at
                         FROM verification_tokens
-                        WHERE ($2::bigint IS NULL OR ver_token_id >= $2)
+                        WHERE ($2::uuid IS NULL OR ver_token_id >= $2)
                         ORDER BY ver_token_id ASC
                         LIMIT $1 + 1
                     "#,
@@ -80,11 +114,11 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    AppRoleModel,
+                    VerificationTokenModel,
                     r#"
                         SELECT ver_token_id, user_id, purpose, token_hash, used_at, created_at, updated_at
                         FROM verification_tokens
-                        WHERE ($2::bigint IS NULL OR ver_token_id <= $2)
+                        WHERE ($2::uuid IS NULL OR ver_token_id <= $2)
                         ORDER BY ver_token_id DESC
                         LIMIT $1 + 1
                     "#,
@@ -96,8 +130,9 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
-        let items: Vec<VerificationTokenModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let has_more = result.len() as i32 > resolved_limit;
+        let items: Vec<VerificationTokenModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.ver_token_id)
         } else {
@@ -107,7 +142,12 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn list_by_user_id(&self, conn: &mut PgConnection, user_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<VerificationTokenModel>> {
+    async fn list_by_user_id(
+        &self,
+        conn: &mut PgConnection,
+        user_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<VerificationTokenModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -117,7 +157,7 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
                     r#"
                         SELECT ver_token_id, user_id, purpose, token_hash, used_at, created_at, updated_at
                         FROM verification_tokens
-                        WHERE ($2::bigint IS NULL OR ver_token_id >= $2) AND (user_id = $3)
+                        WHERE ($2::uuid IS NULL OR ver_token_id >= $2) AND (user_id = $3)
                         ORDER BY ver_token_id ASC
                         LIMIT $1 + 1
                     "#,
@@ -130,11 +170,11 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    AppRoleModel,
+                    VerificationTokenModel,
                     r#"
                         SELECT ver_token_id, user_id, purpose, token_hash, used_at, created_at, updated_at
                         FROM verification_tokens
-                        WHERE ($2::bigint IS NULL OR ver_token_id <= $2) AND (user_id = $3)
+                        WHERE ($2::uuid IS NULL OR ver_token_id <= $2) AND (user_id = $3)
                         ORDER BY ver_token_id DESC
                         LIMIT $1 + 1
                     "#,
@@ -147,8 +187,9 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
-        let items: Vec<VerificationTokenModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let has_more = result.len() as i32 > resolved_limit;
+        let items: Vec<VerificationTokenModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.ver_token_id)
         } else {
@@ -158,7 +199,12 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateVerificationToken) -> HuxleyStoreResult<VerificationTokenModel> {
+    async fn update(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+        input: UpdateVerificationToken,
+    ) -> HuxleyStoreResult<Option<VerificationTokenModel>> {
         let (set_used_at, used_at) = input.used_at.into_parts();
 
         let result = sqlx::query_as!(
@@ -167,11 +213,13 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
                 UPDATE verification_tokens
                 SET used_at = CASE WHEN $2 THEN $3::timestamptz ELSE used_at END
                 WHERE ver_token_id = $1
+                RETURNING ver_token_id, user_id, purpose, token_hash, used_at, created_at, updated_at
             "#,
             id,
-            set_used_at, used_at,
+            set_used_at,
+            used_at,
         )
-        .execute(conn)
+        .fetch_optional(conn)
         .await?;
 
         Ok(result)

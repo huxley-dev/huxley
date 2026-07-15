@@ -3,20 +3,47 @@ use sqlx::PgConnection;
 use uuid::Uuid;
 
 use crate::{
-    commands::org_user::CreateOrgUser,
-    models::org_user::OrgUserModel,
-    common::{Page, PageQuery, PageSort},
     HuxleyStoreResult,
+    commands::org_user::CreateOrgUser,
+    common::{Page, PageQuery, PageSort},
+    models::org_user::OrgUserModel,
 };
 
 #[async_trait]
 pub trait OrgUsersRepository: Send + Sync {
-    async fn create(&self, conn: &mut PgConnection, input: CreateOrgUser) -> HuxleyStoreResult<OrgUserModel>;
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<OrgUserModel>>;
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<OrgUserModel>>;
-    async fn list_by_org_id(&self, conn: &mut PgConnection, org_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<OrgUserModel>>;
-    async fn list_by_user_id(&self, conn: &mut PgConnection, user_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<OrgUserModel>>;
-    async fn list_by_org_role_id(&self, conn: &mut PgConnection, org_role_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<OrgUserModel>>;
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateOrgUser,
+    ) -> HuxleyStoreResult<OrgUserModel>;
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<OrgUserModel>>;
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<OrgUserModel>>;
+    async fn list_by_org_id(
+        &self,
+        conn: &mut PgConnection,
+        org_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<OrgUserModel>>;
+    async fn list_by_user_id(
+        &self,
+        conn: &mut PgConnection,
+        user_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<OrgUserModel>>;
+    async fn list_by_org_role_id(
+        &self,
+        conn: &mut PgConnection,
+        org_role_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<OrgUserModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -24,7 +51,11 @@ pub struct PgOrgUsersRepository;
 
 #[async_trait]
 impl OrgUsersRepository for PgOrgUsersRepository {
-    async fn create(&self, conn: &mut PgConnection, input: CreateOrgUser) -> HuxleyStoreResult<OrgUserModel> {
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateOrgUser,
+    ) -> HuxleyStoreResult<OrgUserModel> {
         let result = sqlx::query_as!(
             OrgUserModel,
             r#"
@@ -42,7 +73,11 @@ impl OrgUsersRepository for PgOrgUsersRepository {
         Ok(result)
     }
 
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<OrgUserModel>> {
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<OrgUserModel>> {
         let result = sqlx::query_as!(
             OrgUserModel,
             r#"
@@ -58,7 +93,11 @@ impl OrgUsersRepository for PgOrgUsersRepository {
         Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<OrgUserModel>> {
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<OrgUserModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -68,7 +107,7 @@ impl OrgUsersRepository for PgOrgUsersRepository {
                     r#"
                         SELECT org_user_id, org_id, user_id, org_role_id, created_at, updated_at
                         FROM org_users
-                        WHERE ($2::bigint IS NULL OR org_user_id >= $2)
+                        WHERE ($2::uuid IS NULL OR org_user_id >= $2)
                         ORDER BY org_user_id ASC
                         LIMIT $1 + 1
                     "#,
@@ -77,14 +116,14 @@ impl OrgUsersRepository for PgOrgUsersRepository {
                 )
                 .fetch_all(conn)
                 .await?
-            },
+            }
             PageSort::Desc => {
                 sqlx::query_as!(
                     OrgUserModel,
                     r#"
                         SELECT org_user_id, org_id, user_id, org_role_id, created_at, updated_at
                         FROM org_users
-                        WHERE ($2::bigint IS NULL OR org_user_id <= $2)
+                        WHERE ($2::uuid IS NULL OR org_user_id <= $2)
                         ORDER BY org_user_id DESC
                         LIMIT $1 + 1
                     "#,
@@ -96,7 +135,7 @@ impl OrgUsersRepository for PgOrgUsersRepository {
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
+        let has_more = result.len() as i32 > resolved_limit;
         let items: Vec<OrgUserModel> = result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.org_user_id)
@@ -107,8 +146,12 @@ impl OrgUsersRepository for PgOrgUsersRepository {
         Ok(Page { items, next_cursor })
     }
 
-
-    async fn list_by_org_id(&self, conn: &mut PgConnection, org_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<OrgUserModel>> {
+    async fn list_by_org_id(
+        &self,
+        conn: &mut PgConnection,
+        org_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<OrgUserModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -118,7 +161,7 @@ impl OrgUsersRepository for PgOrgUsersRepository {
                     r#"
                         SELECT org_user_id, org_id, user_id, org_role_id, created_at, updated_at
                         FROM org_users
-                        WHERE ($2::bigint IS NULL OR org_user_id >= $2) AND (org_id = $3)
+                        WHERE ($2::uuid IS NULL OR org_user_id >= $2) AND (org_id = $3)
                         ORDER BY org_user_id ASC
                         LIMIT $1 + 1
                     "#,
@@ -128,14 +171,14 @@ impl OrgUsersRepository for PgOrgUsersRepository {
                 )
                 .fetch_all(conn)
                 .await?
-            },
+            }
             PageSort::Desc => {
                 sqlx::query_as!(
                     OrgUserModel,
                     r#"
                         SELECT org_user_id, org_id, user_id, org_role_id, created_at, updated_at
                         FROM org_users
-                        WHERE ($2::bigint IS NULL OR org_user_id <= $2) AND (org_id = $3)
+                        WHERE ($2::uuid IS NULL OR org_user_id <= $2) AND (org_id = $3)
                         ORDER BY org_user_id DESC
                         LIMIT $1 + 1
                     "#,
@@ -148,7 +191,7 @@ impl OrgUsersRepository for PgOrgUsersRepository {
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
+        let has_more = result.len() as i32 > resolved_limit;
         let items: Vec<OrgUserModel> = result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.org_user_id)
@@ -159,7 +202,12 @@ impl OrgUsersRepository for PgOrgUsersRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn list_by_user_id(&self, conn: &mut PgConnection, user_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<OrgUserModel>> {
+    async fn list_by_user_id(
+        &self,
+        conn: &mut PgConnection,
+        user_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<OrgUserModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -169,7 +217,7 @@ impl OrgUsersRepository for PgOrgUsersRepository {
                     r#"
                         SELECT org_user_id, org_id, user_id, org_role_id, created_at, updated_at
                         FROM org_users
-                        WHERE ($2::bigint IS NULL OR org_user_id >= $2) AND (user_id = $3)
+                        WHERE ($2::uuid IS NULL OR org_user_id >= $2) AND (user_id = $3)
                         ORDER BY org_user_id ASC
                         LIMIT $1 + 1
                     "#,
@@ -179,14 +227,14 @@ impl OrgUsersRepository for PgOrgUsersRepository {
                 )
                 .fetch_all(conn)
                 .await?
-            },
+            }
             PageSort::Desc => {
                 sqlx::query_as!(
                     OrgUserModel,
                     r#"
                         SELECT org_user_id, org_id, user_id, org_role_id, created_at, updated_at
                         FROM org_users
-                        WHERE ($2::bigint IS NULL OR org_user_id <= $2) AND (user_id = $3)
+                        WHERE ($2::uuid IS NULL OR org_user_id <= $2) AND (user_id = $3)
                         ORDER BY org_user_id DESC
                         LIMIT $1 + 1
                     "#,
@@ -199,7 +247,7 @@ impl OrgUsersRepository for PgOrgUsersRepository {
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
+        let has_more = result.len() as i32 > resolved_limit;
         let items: Vec<OrgUserModel> = result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.org_user_id)
@@ -210,7 +258,12 @@ impl OrgUsersRepository for PgOrgUsersRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn list_by_org_role_id(&self, conn: &mut PgConnection, org_role_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<OrgUserModel>> {
+    async fn list_by_org_role_id(
+        &self,
+        conn: &mut PgConnection,
+        org_role_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<OrgUserModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -220,7 +273,7 @@ impl OrgUsersRepository for PgOrgUsersRepository {
                     r#"
                         SELECT org_user_id, org_id, user_id, org_role_id, created_at, updated_at
                         FROM org_users
-                        WHERE ($2::bigint IS NULL OR org_user_id >= $2) AND (org_role_id = $3)
+                        WHERE ($2::uuid IS NULL OR org_user_id >= $2) AND (org_role_id = $3)
                         ORDER BY org_user_id ASC
                         LIMIT $1 + 1
                     "#,
@@ -230,14 +283,14 @@ impl OrgUsersRepository for PgOrgUsersRepository {
                 )
                 .fetch_all(conn)
                 .await?
-            },
+            }
             PageSort::Desc => {
                 sqlx::query_as!(
                     OrgUserModel,
                     r#"
                         SELECT org_user_id, org_id, user_id, org_role_id, created_at, updated_at
                         FROM org_users
-                        WHERE ($2::bigint IS NULL OR org_user_id <= $2) AND (org_role_id = $3)
+                        WHERE ($2::uuid IS NULL OR org_user_id <= $2) AND (org_role_id = $3)
                         ORDER BY org_user_id DESC
                         LIMIT $1 + 1
                     "#,
@@ -250,7 +303,7 @@ impl OrgUsersRepository for PgOrgUsersRepository {
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
+        let has_more = result.len() as i32 > resolved_limit;
         let items: Vec<OrgUserModel> = result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.org_user_id)

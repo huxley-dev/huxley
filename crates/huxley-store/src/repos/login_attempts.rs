@@ -4,32 +4,57 @@ use sqlx::PgConnection;
 use uuid::Uuid;
 
 use crate::{
-    commands::login_attempt::CreateLoginAttempt,
-    models::login_attempt::LoginAttemptModel,
-    common::{Page, PageQuery, PageSort},
     HuxleyStoreResult,
+    commands::login_attempt::CreateLoginAttempt,
+    common::{Page, PageQuery, PageSort},
+    models::login_attempt::LoginAttemptModel,
 };
 
 #[async_trait]
 pub trait LoginAttemptsRepository: Send + Sync {
-    async fn create(&self, conn: &mut PgConnection, input: CreateLoginAttempt) -> HuxleyStoreResult<LoginAttemptModel>;
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<LoginAttemptModel>>;
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<LoginAttemptModel>>;
-    async fn list_by_user_id(&self, conn: &mut PgConnection, user_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<LoginAttemptModel>>;
-    async fn delete_older_than(&self, conn: &mut PgConnection, id: Uuid, date: DateTime<Utc>) -> HuxleyStoreResult<bool>;
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateLoginAttempt,
+    ) -> HuxleyStoreResult<LoginAttemptModel>;
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<LoginAttemptModel>>;
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<LoginAttemptModel>>;
+    async fn list_by_user_id(
+        &self,
+        conn: &mut PgConnection,
+        user_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<LoginAttemptModel>>;
+    async fn delete_older_than(
+        &self,
+        conn: &mut PgConnection,
+        date: DateTime<Utc>,
+    ) -> HuxleyStoreResult<bool>;
 }
 
 pub struct PgLoginAttemptsRepository;
 
 #[async_trait]
 impl LoginAttemptsRepository for PgLoginAttemptsRepository {
-    async fn create(&self, conn: &mut PgConnection, input: CreateLoginAttempt) -> HuxleyStoreResult<LoginAttemptModel> {
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateLoginAttempt,
+    ) -> HuxleyStoreResult<LoginAttemptModel> {
         let result = sqlx::query_as!(
             LoginAttemptModel,
             r#"
                 INSERT INTO login_attempts (user_id, email, ip, user_agent, successful)
-                VALUES ($1, $2, $3, $4, $5)
-                RETURNING login_attempt_id, user_id, email, ip, user_agent, successful, created_at, updated_at
+                VALUES ($1, $2, CAST($3 AS TEXT)::inet, $4, $5)
+                RETURNING login_attempt_id, user_id, email, ip::text AS "ip?", user_agent, successful, created_at, updated_at
             "#,
             input.user_id,
             input.email,
@@ -43,11 +68,15 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
         Ok(result)
     }
 
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<LoginAttemptModel>> {
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<LoginAttemptModel>> {
         let result = sqlx::query_as!(
             LoginAttemptModel,
             r#"
-                SELECT login_attempt_id, user_id, email, ip, user_agent, successful, created_at, updated_at
+                SELECT login_attempt_id, user_id, email, ip::text AS "ip?", user_agent, successful, created_at, updated_at
                 FROM login_attempts
                 WHERE login_attempt_id = $1
             "#,
@@ -59,7 +88,11 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
         Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<LoginAttemptModel>> {
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<LoginAttemptModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -67,9 +100,9 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
                 sqlx::query_as!(
                     LoginAttemptModel,
                     r#"
-                        SELECT login_attempt_id, user_id, email, ip, user_agent, successful, created_at, updated_at
+                        SELECT login_attempt_id, user_id, email, ip::text AS "ip?", user_agent, successful, created_at, updated_at
                         FROM login_attempts
-                        WHERE ($2::bigint IS NULL OR login_attempt_id >= $2)
+                        WHERE ($2::uuid IS NULL OR login_attempt_id >= $2)
                         ORDER BY login_attempt_id ASC
                         LIMIT $1 + 1
                     "#,
@@ -83,9 +116,9 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
                 sqlx::query_as!(
                     LoginAttemptModel,
                     r#"
-                        SELECT login_attempt_id, user_id, email, ip, user_agent, successful, created_at, updated_at
+                        SELECT login_attempt_id, user_id, email, ip::text AS "ip?", user_agent, successful, created_at, updated_at
                         FROM login_attempts
-                        WHERE ($2::bigint IS NULL OR login_attempt_id <= $2)
+                        WHERE ($2::uuid IS NULL OR login_attempt_id <= $2)
                         ORDER BY login_attempt_id DESC
                         LIMIT $1 + 1
                     "#,
@@ -97,8 +130,9 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
-        let items: Vec<LoginAttemptModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let has_more = result.len() as i32 > resolved_limit;
+        let items: Vec<LoginAttemptModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.login_attempt_id)
         } else {
@@ -108,7 +142,12 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn list_by_user_id(&self, conn: &mut PgConnection, user_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<LoginAttemptModel>> {
+    async fn list_by_user_id(
+        &self,
+        conn: &mut PgConnection,
+        user_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<LoginAttemptModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -116,9 +155,9 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
                 sqlx::query_as!(
                     LoginAttemptModel,
                     r#"
-                        SELECT login_attempt_id, user_id, email, ip, user_agent, successful, created_at, updated_at
+                        SELECT login_attempt_id, user_id, email, ip::text AS "ip?", user_agent, successful, created_at, updated_at
                         FROM login_attempts
-                        WHERE ($2::bigint IS NULL OR login_attempt_id >= $2) AND (user_id = $3)
+                        WHERE ($2::uuid IS NULL OR login_attempt_id >= $2) AND (user_id = $3)
                         ORDER BY login_attempt_id ASC
                         LIMIT $1 + 1
                     "#,
@@ -133,9 +172,9 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
                 sqlx::query_as!(
                     LoginAttemptModel,
                     r#"
-                        SELECT login_attempt_id, user_id, email, ip, user_agent, successful, created_at, updated_at
+                        SELECT login_attempt_id, user_id, email, ip::text AS "ip?", user_agent, successful, created_at, updated_at
                         FROM login_attempts
-                        WHERE ($2::bigint IS NULL OR login_attempt_id <= $2) AND (user_id = $3)
+                        WHERE ($2::uuid IS NULL OR login_attempt_id <= $2) AND (user_id = $3)
                         ORDER BY login_attempt_id DESC
                         LIMIT $1 + 1
                     "#,
@@ -148,8 +187,9 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
-        let items: Vec<LoginAttemptModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let has_more = result.len() as i32 > resolved_limit;
+        let items: Vec<LoginAttemptModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.login_attempt_id)
         } else {
@@ -159,7 +199,11 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn delete_older_than(&self, conn: &mut PgConnection, id: Uuid, date: DateTime<Utc>) -> HuxleyStoreResult<bool> {
+    async fn delete_older_than(
+        &self,
+        conn: &mut PgConnection,
+        date: DateTime<Utc>,
+    ) -> HuxleyStoreResult<bool> {
         let result = sqlx::query!(
             r#"
                 DELETE from login_attempts

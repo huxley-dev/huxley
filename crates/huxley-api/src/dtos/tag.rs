@@ -3,11 +3,11 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
-use crate::{HuxleyApiResult, HuxleyApiError};
+use crate::{HuxleyApiError, HuxleyApiResult};
 use huxley_store::{
     commands::tag::{CreateTag, UpdateTag},
+    common::to_field,
     models::tag::TagModel,
-    common::{Field, to_field},
 };
 
 #[derive(Debug, Deserialize, TS)]
@@ -51,15 +51,13 @@ pub struct TagResponse {
 impl TryFrom<CreateTagRequest> for CreateTag {
     type Error = HuxleyApiError;
 
-    fn try_from(req: CreateTagRequest) -> HuxleyApiResponse<Self> {
-        Ok(
-            CreateTag {
-                tag_type: req.tag_type,
-                name: req.name,
-                bg_color: req.name,
-                text_color: req.name,
-            }
-        )
+    fn try_from(req: CreateTagRequest) -> HuxleyApiResult<Self> {
+        Ok(CreateTag {
+            tag_type: req.tag_type,
+            name: req.name,
+            bg_color: req.bg_color,
+            text_color: req.text_color,
+        })
     }
 }
 
@@ -74,7 +72,7 @@ impl From<UpdateTagRequest> for UpdateTag {
 }
 
 impl From<TagModel> for TagResponse {
-    fn from (tag: TagModel) -> Self {
+    fn from(tag: TagModel) -> Self {
         TagResponse {
             tag_id: tag.tag_id,
             tag_type: tag.tag_type,

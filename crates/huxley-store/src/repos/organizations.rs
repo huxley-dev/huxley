@@ -3,19 +3,41 @@ use sqlx::PgConnection;
 use uuid::Uuid;
 
 use crate::{
-    commands::organization::{CreateOrganization, UpdateOrganization},
-    models::organization::OrganizationModel,
-    common::{Page, PageQuery, PageSort},
     HuxleyStoreResult,
+    commands::organization::{CreateOrganization, UpdateOrganization},
+    common::{Page, PageQuery, PageSort},
+    models::organization::OrganizationModel,
 };
 
 #[async_trait]
 pub trait OrganizationsRepository: Send + Sync {
-    async fn create(&self, conn: &mut PgConnection, input: CreateOrganization) -> HuxleyStoreResult<OrganizationModel>;
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<OrganizationModel>>;
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<OrganizationModel>>;
-    async fn list_by_parent_id(&self, conn: &mut PgConnection, parent_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<OrganizationModel>>;
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrganization) -> HuxleyStoreResult<OrganizationModel>;
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateOrganization,
+    ) -> HuxleyStoreResult<OrganizationModel>;
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<OrganizationModel>>;
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<OrganizationModel>>;
+    async fn list_by_parent_id(
+        &self,
+        conn: &mut PgConnection,
+        parent_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<OrganizationModel>>;
+    async fn update(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+        input: UpdateOrganization,
+    ) -> HuxleyStoreResult<Option<OrganizationModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -23,7 +45,11 @@ pub struct PgOrganizationsRepository;
 
 #[async_trait]
 impl OrganizationsRepository for PgOrganizationsRepository {
-    async fn create(&self, conn: &mut PgConnection, input: CreateOrganization) -> HuxleyStoreResult<OrganizationModel> {
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateOrganization,
+    ) -> HuxleyStoreResult<OrganizationModel> {
         let result = sqlx::query_as!(
             OrganizationModel,
             r#"
@@ -43,7 +69,11 @@ impl OrganizationsRepository for PgOrganizationsRepository {
         Ok(result)
     }
 
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<OrganizationModel>> {
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<OrganizationModel>> {
         let result = sqlx::query_as!(
             OrganizationModel,
             r#"
@@ -59,17 +89,21 @@ impl OrganizationsRepository for PgOrganizationsRepository {
         Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<OrganizationModel>> {
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<OrganizationModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    ApiTokenModel,
+                    OrganizationModel,
                     r#"
                         SELECT org_id, parent_id, name, slug, status, settings, created_at, updated_at
                         FROM organizations
-                        WHERE ($2::bigint IS NULL OR org_id >= $2)
+                        WHERE ($2::uuid IS NULL OR org_id >= $2)
                         ORDER BY org_id ASC
                         LIMIT $1 + 1
                     "#,
@@ -85,7 +119,7 @@ impl OrganizationsRepository for PgOrganizationsRepository {
                     r#"
                         SELECT org_id, parent_id, name, slug, status, settings, created_at, updated_at
                         FROM organizations
-                        WHERE ($2::bigint IS NULL OR org_id <= $2)
+                        WHERE ($2::uuid IS NULL OR org_id <= $2)
                         ORDER BY org_id DESC
                         LIMIT $1 + 1
                     "#,
@@ -97,8 +131,9 @@ impl OrganizationsRepository for PgOrganizationsRepository {
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
-        let items: Vec<OrganizationModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let has_more = result.len() as i32 > resolved_limit;
+        let items: Vec<OrganizationModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.org_id)
         } else {
@@ -108,17 +143,22 @@ impl OrganizationsRepository for PgOrganizationsRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn list_by_parent_id(&self, conn: &mut PgConnection, parent_id: Uuid, page: PageQuery) -> HuxleyStoreResult<Page<OrganizationModel>> {
+    async fn list_by_parent_id(
+        &self,
+        conn: &mut PgConnection,
+        parent_id: Uuid,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<OrganizationModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    ApiTokenModel,
+                    OrganizationModel,
                     r#"
                         SELECT org_id, parent_id, name, slug, status, settings, created_at, updated_at
                         FROM organizations
-                        WHERE ($2::bigint IS NULL OR org_id >= $2) AND (parent_id = $3)
+                        WHERE ($2::uuid IS NULL OR org_id >= $2) AND (parent_id = $3)
                         ORDER BY org_id ASC
                         LIMIT $1 + 1
                     "#,
@@ -135,7 +175,7 @@ impl OrganizationsRepository for PgOrganizationsRepository {
                     r#"
                         SELECT org_id, parent_id, name, slug, status, settings, created_at, updated_at
                         FROM organizations
-                        WHERE ($2::bigint IS NULL OR org_id <= $2) AND (parent_id = $3)
+                        WHERE ($2::uuid IS NULL OR org_id <= $2) AND (parent_id = $3)
                         ORDER BY org_id DESC
                         LIMIT $1 + 1
                     "#,
@@ -148,8 +188,9 @@ impl OrganizationsRepository for PgOrganizationsRepository {
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
-        let items: Vec<OrganizationModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let has_more = result.len() as i32 > resolved_limit;
+        let items: Vec<OrganizationModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.org_id)
         } else {
@@ -159,7 +200,12 @@ impl OrganizationsRepository for PgOrganizationsRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateOrganization) -> HuxleyStoreResult<OrganizationModel> {
+    async fn update(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+        input: UpdateOrganization,
+    ) -> HuxleyStoreResult<Option<OrganizationModel>> {
         let (set_parent_id, parent_id) = input.parent_id.into_parts();
         let (set_name, name) = input.name.into_parts();
         let (set_slug, slug) = input.slug.into_parts();
@@ -176,15 +222,21 @@ impl OrganizationsRepository for PgOrganizationsRepository {
                     status = CASE WHEN $8 THEN $9::text ELSE status END,
                     settings = CASE WHEN $10 THEN $11::jsonb ELSE settings END
                 WHERE org_id = $1
+                RETURNING org_id, parent_id, name, slug, status, settings, created_at, updated_at
             "#,
             id,
-            set_parent_id, parent_id,
-            set_name, name,
-            set_slug, slug,
-            set_status, status,
-            set_settings, settings,
+            set_parent_id,
+            parent_id,
+            set_name,
+            name,
+            set_slug,
+            slug,
+            set_status,
+            status,
+            set_settings,
+            settings,
         )
-        .execute(conn)
+        .fetch_optional(conn)
         .await?;
 
         Ok(result)

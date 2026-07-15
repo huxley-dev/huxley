@@ -49,14 +49,14 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
             r#"
                 INSERT INTO identity_providers (kind, name, slug, enabled, config, secret_enc)
                 VALUES ($1, $2, $3, $4, $5, $6)
-                RETURNING idp_id, kind, name, slug, enabled, config, secret_enc, created_at, updated_at
+                RETURNING idp_id, kind, name, slug, enabled, config, secret_enc AS "secret_enc!", created_at, updated_at
             "#,
             input.kind,
             input.name,
             input.slug,
             input.enabled,
             input.config,
-            &input.secret_enc,
+            input.secret_enc,
         )
         .fetch_one(conn)
         .await?;
@@ -72,7 +72,7 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
         let result = sqlx::query_as!(
             IdentityProviderModel,
             r#"
-                SELECT idp_id, kind, name, slug, enabled, config, created_at, updated_at
+                SELECT idp_id, kind, name, slug, enabled, config, secret_enc AS "secret_enc!", created_at, updated_at
                 FROM identity_providers
                 WHERE idp_id = $1
             "#,
@@ -96,9 +96,9 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
                 sqlx::query_as!(
                     IdentityProviderModel,
                     r#"
-                        SELECT idp_id, kind, name, slug, enabled, config, created_at, updated_at
+                        SELECT idp_id, kind, name, slug, enabled, config, secret_enc AS "secret_enc!", created_at, updated_at
                         FROM identity_providers
-                        WHERE ($2::bigint IS NULL OR idp_id >= $2)
+                        WHERE ($2::uuid IS NULL OR idp_id >= $2)
                         ORDER BY idp_id ASC
                         LIMIT $1 + 1
                     "#,
@@ -112,9 +112,9 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
                 sqlx::query_as!(
                     IdentityProviderModel,
                     r#"
-                        SELECT idp_id, kind, name, slug, enabled, config, created_at, updated_at
-                        FROM identity_provider
-                        WHERE ($2::bigint IS NULL OR idp_id <= $2)
+                        SELECT idp_id, kind, name, slug, enabled, config, secret_enc AS "secret_enc!", created_at, updated_at
+                        FROM identity_providers
+                        WHERE ($2::uuid IS NULL OR idp_id <= $2)
                         ORDER BY idp_id DESC
                         LIMIT $1 + 1
                     "#,
@@ -126,7 +126,7 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
+        let has_more = result.len() as i32 > resolved_limit;
         let items: Vec<IdentityProviderModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
@@ -143,7 +143,7 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateIdentityProvider,
-    ) -> HuxleyStoreResult<IdentityProviderModel> {
+    ) -> HuxleyStoreResult<Option<IdentityProviderModel>> {
         let (set_kind, kind) = input.kind.into_parts();
         let (set_name, name) = input.name.into_parts();
         let (set_slug, slug) = input.slug.into_parts();
@@ -162,6 +162,7 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
                     config = CASE WHEN $10 THEN $11::jsonb ELSE config END,
                     secret_enc = CASE WHEN $12 THEN $13::bytea ELSE secret_enc END
                 WHERE idp_id = $1
+                RETURNING idp_id, kind, name, slug, enabled, config, secret_enc AS "secret_enc!", created_at, updated_at
             "#,
             id,
             set_kind,
@@ -177,7 +178,7 @@ impl IdentityProvidersRepository for PgIdentityProvidersRepository {
             set_secret_enc,
             secret_enc,
         )
-        .execute(conn)
+        .fetch_optional(conn)
         .await?;
 
         Ok(result)

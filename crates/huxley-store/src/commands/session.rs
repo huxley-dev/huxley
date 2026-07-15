@@ -1,5 +1,4 @@
 use chrono::{DateTime, Utc};
-use std::net::IpAddr;
 use uuid::Uuid;
 
 use crate::common::Field;
@@ -10,7 +9,7 @@ pub struct CreateSession {
     pub token_hash: Vec<u8>,
     pub aal: i16,
     pub auth_method: String,
-    pub ip: Option<IpAddr>,
+    pub ip: Option<String>,
     pub user_agent: Option<String>,
     pub last_seen_at: DateTime<Utc>,
     pub idle_expires_at: DateTime<Utc>,

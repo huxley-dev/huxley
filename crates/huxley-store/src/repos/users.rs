@@ -3,19 +3,40 @@ use sqlx::PgConnection;
 use uuid::Uuid;
 
 use crate::{
-    commands::user::{CreateUser, UpdateUser},
-    models::user::UserModel,
-    common::{Page, PageQuery, PageSort},
     HuxleyStoreResult,
+    commands::user::{CreateUser, UpdateUser},
+    common::{Page, PageQuery, PageSort},
+    models::user::UserModel,
 };
 
 #[async_trait]
 pub trait UsersRepository: Send + Sync {
-    async fn create(&self, conn: &mut PgConnection, input: CreateUser) -> HuxleyStoreResult<UserModel>;
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<UserModel>>;
-    async fn find_by_email(&self, conn: &mut PgConnection, email: &str) -> HuxleyStoreResult<Option<UserModel>>;
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<UserModel>>;
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateUser) -> HuxleyStoreResult<UserModel>;
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateUser,
+    ) -> HuxleyStoreResult<UserModel>;
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<UserModel>>;
+    async fn find_by_email(
+        &self,
+        conn: &mut PgConnection,
+        email: &str,
+    ) -> HuxleyStoreResult<Option<UserModel>>;
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<UserModel>>;
+    async fn update(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+        input: UpdateUser,
+    ) -> HuxleyStoreResult<Option<UserModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -23,7 +44,11 @@ pub struct PgUsersRepository;
 
 #[async_trait]
 impl UsersRepository for PgUsersRepository {
-    async fn create(&self, conn: &mut PgConnection, input: CreateUser) -> HuxleyStoreResult<UserModel> {
+    async fn create(
+        &self,
+        conn: &mut PgConnection,
+        input: CreateUser,
+    ) -> HuxleyStoreResult<UserModel> {
         let result = sqlx::query_as!(
             UserModel,
             r#"
@@ -45,9 +70,13 @@ impl UsersRepository for PgUsersRepository {
         Ok(result)
     }
 
-    async fn find_by_id(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<Option<UserModel>> {
+    async fn find_by_id(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+    ) -> HuxleyStoreResult<Option<UserModel>> {
         let result = sqlx::query_as!(
-            UsersModel,
+            UserModel,
             r#"
                 SELECT user_id, name, email, email_verified, password_hash, status, preferences, app_role_id, created_at, updated_at
                 FROM users
@@ -61,9 +90,13 @@ impl UsersRepository for PgUsersRepository {
         Ok(result)
     }
 
-    async fn find_by_email(&self, conn: &mut PgConnection, email: &str) -> HuxleyStoreResult<Option<UserModel>> {
+    async fn find_by_email(
+        &self,
+        conn: &mut PgConnection,
+        email: &str,
+    ) -> HuxleyStoreResult<Option<UserModel>> {
         let result = sqlx::query_as!(
-            UsersModel,
+            UserModel,
             r#"
                 SELECT user_id, name, email, email_verified, password_hash, status, preferences, app_role_id, created_at, updated_at
                 FROM users
@@ -77,7 +110,11 @@ impl UsersRepository for PgUsersRepository {
         Ok(result)
     }
 
-    async fn list(&self, conn: &mut PgConnection, page: PageQuery) -> HuxleyStoreResult<Page<UserModel>> {
+    async fn list(
+        &self,
+        conn: &mut PgConnection,
+        page: PageQuery,
+    ) -> HuxleyStoreResult<Page<UserModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
@@ -87,7 +124,7 @@ impl UsersRepository for PgUsersRepository {
                     r#"
                         SELECT user_id, name, email, email_verified, password_hash, status, preferences, app_role_id, created_at, updated_at
                         FROM users
-                        WHERE ($2::bigint IS NULL OR user_id >= $2)
+                        WHERE ($2::uuid IS NULL OR user_id >= $2)
                         ORDER BY user_id ASC
                         LIMIT $1 + 1
                     "#,
@@ -103,7 +140,7 @@ impl UsersRepository for PgUsersRepository {
                     r#"
                         SELECT user_id, name, email, email_verified, password_hash, status, preferences, app_role_id, created_at, updated_at
                         FROM users
-                        WHERE ($2::bigint IS NULL OR user_id <= $2)
+                        WHERE ($2::uuid IS NULL OR user_id <= $2)
                         ORDER BY user_id DESC
                         LIMIT $1 + 1
                     "#,
@@ -115,7 +152,7 @@ impl UsersRepository for PgUsersRepository {
             }
         };
 
-        let has_more = result.len() as i64 > resolved_limit;
+        let has_more = result.len() as i32 > resolved_limit;
         let items: Vec<UserModel> = result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.user_id)
@@ -126,7 +163,12 @@ impl UsersRepository for PgUsersRepository {
         Ok(Page { items, next_cursor })
     }
 
-    async fn update(&self, conn: &mut PgConnection, id: Uuid, input: UpdateUser) -> HuxleyStoreResult<UserModel> {
+    async fn update(
+        &self,
+        conn: &mut PgConnection,
+        id: Uuid,
+        input: UpdateUser,
+    ) -> HuxleyStoreResult<Option<UserModel>> {
         let (set_name, name) = input.name.into_parts();
         let (set_email, email) = input.email.into_parts();
         let (set_email_verified, email_verified) = input.email_verified.into_parts();
@@ -145,19 +187,27 @@ impl UsersRepository for PgUsersRepository {
                     password_hash = CASE WHEN $8 THEN $9::text ELSE password_hash END,
                     status = CASE WHEN $10 THEN $11::text ELSE status END,
                     preferences = CASE WHEN $12 THEN $13::jsonb ELSE preferences END,
-                    app_role_id = CASE WHEN $14 THEN $14::uuid ELSE app_role_id END,
+                    app_role_id = CASE WHEN $14 THEN $15::uuid ELSE app_role_id END
                 WHERE user_id = $1
+                RETURNING user_id, name, email, email_verified, password_hash, status, preferences, app_role_id, created_at, updated_at
             "#,
             id,
-            set_name, name,
-            set_email, email,
-            set_email_verified, email_verified,
-            set_password_hash, password_hash,
-            set_status, status,
-            set_preferences, preferences,
-            set_app_role_id, app_role_id,
+            set_name,
+            name,
+            set_email,
+            email,
+            set_email_verified,
+            email_verified,
+            set_password_hash,
+            password_hash,
+            set_status,
+            status,
+            set_preferences,
+            preferences,
+            set_app_role_id,
+            app_role_id,
         )
-        .execute(conn)
+        .fetch_optional(conn)
         .await?;
 
         Ok(result)

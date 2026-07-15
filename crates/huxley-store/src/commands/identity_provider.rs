@@ -13,7 +13,7 @@ pub struct UpdateIdentityProvider {
     pub kind: Field<String>,
     pub name: Field<String>,
     pub slug: Field<String>,
-    pub enabled: Field<String>,
+    pub enabled: Field<bool>,
     pub config: Field<serde_json::Value>,
     pub secret_enc: Field<Vec<u8>>,
 }

@@ -3,11 +3,11 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
-use crate::{HuxleyApiResult, HuxleyApiError};
+use crate::{HuxleyApiError, HuxleyApiResult};
 use huxley_store::{
     commands::{CreateOrganization, UpdateOrganization},
+    common::to_field,
     models::OrganizationModel,
-    common::{Field, to_field},
 };
 
 #[derive(Debug, Deserialize, TS)]
@@ -60,15 +60,13 @@ impl TryFrom<CreateOrganizationRequest> for CreateOrganization {
     type Error = HuxleyApiError;
 
     fn try_from(req: CreateOrganizationRequest) -> HuxleyApiResult<Self> {
-        Ok(
-            CreateOrganization {
-                parent_id: req.parent_id,
-                name: req.name,
-                slug: req.name,
-                status: req.status,
-                settings: req.settings,
-            }
-        )
+        Ok(CreateOrganization {
+            parent_id: req.parent_id,
+            name: req.name,
+            slug: req.slug,
+            status: req.status,
+            settings: req.settings,
+        })
     }
 }
 
