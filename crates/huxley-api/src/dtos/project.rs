@@ -5,9 +5,9 @@ use uuid::Uuid;
 
 use crate::{HuxleyApiError, HuxleyApiResult};
 use huxley_store::{
-    commands::{CreateProject, UpdateProject},
+    commands::project::{CreateProject, UpdateProject},
     common::to_field,
-    models::ProjectModel,
+    models::project::ProjectPublicModel,
 };
 
 #[derive(Debug, Deserialize, TS)]
@@ -74,8 +74,8 @@ impl From<UpdateProjectRequest> for UpdateProject {
     }
 }
 
-impl From<ProjectModel> for ProjectResponse {
-    fn from(project: ProjectModel) -> Self {
+impl From<ProjectPublicModel> for ProjectResponse {
+    fn from(project: ProjectPublicModel) -> Self {
         ProjectResponse {
             project_id: project.project_id,
             project_type: project.project_type,

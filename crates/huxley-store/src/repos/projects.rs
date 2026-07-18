@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::project::{CreateProject, UpdateProject},
     common::{Page, PageQuery, PageSort},
-    models::project::ProjectModel,
+    models::project::ProjectPublicModel,
 };
 
 #[async_trait]
@@ -15,29 +15,29 @@ pub trait ProjectsRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateProject,
-    ) -> HuxleyStoreResult<ProjectModel>;
+    ) -> HuxleyStoreResult<ProjectPublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<ProjectModel>>;
+    ) -> HuxleyStoreResult<Option<ProjectPublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<ProjectModel>>;
+    ) -> HuxleyStoreResult<Page<ProjectPublicModel>>;
     async fn list_by_org_id(
         &self,
         conn: &mut PgConnection,
         org_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<ProjectModel>>;
+    ) -> HuxleyStoreResult<Page<ProjectPublicModel>>;
     async fn update(
         &self,
         connect: &mut PgConnection,
         id: Uuid,
         input: UpdateProject,
-    ) -> HuxleyStoreResult<Option<ProjectModel>>;
+    ) -> HuxleyStoreResult<Option<ProjectPublicModel>>;
     async fn delete(&self, connect: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -49,9 +49,9 @@ impl ProjectsRepository for PgProjectsRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateProject,
-    ) -> HuxleyStoreResult<ProjectModel> {
+    ) -> HuxleyStoreResult<ProjectPublicModel> {
         let result = sqlx::query_as!(
-            ProjectModel,
+            ProjectPublicModel,
             r#"
                 INSERT INTO projects (project_type, org_id, name, slug, description)
                 VALUES ($1, $2, $3, $4, $5)
@@ -73,9 +73,9 @@ impl ProjectsRepository for PgProjectsRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<ProjectModel>> {
+    ) -> HuxleyStoreResult<Option<ProjectPublicModel>> {
         let result = sqlx::query_as!(
-            ProjectModel,
+            ProjectPublicModel,
             r#"
                 SELECT project_id, project_type, org_id, name, slug, description, created_at, updated_at
                 FROM projects
@@ -93,13 +93,13 @@ impl ProjectsRepository for PgProjectsRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<ProjectModel>> {
+    ) -> HuxleyStoreResult<Page<ProjectPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    ProjectModel,
+                    ProjectPublicModel,
                     r#"
                         SELECT project_id, project_type, org_id, name, slug, description, created_at, updated_at
                         FROM projects
@@ -115,7 +115,7 @@ impl ProjectsRepository for PgProjectsRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    ProjectModel,
+                    ProjectPublicModel,
                     r#"
                         SELECT project_id, project_type, org_id, name, slug, description, created_at, updated_at
                         FROM projects
@@ -132,7 +132,8 @@ impl ProjectsRepository for PgProjectsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<ProjectModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<ProjectPublicModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.project_id)
         } else {
@@ -147,13 +148,13 @@ impl ProjectsRepository for PgProjectsRepository {
         conn: &mut PgConnection,
         org_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<ProjectModel>> {
+    ) -> HuxleyStoreResult<Page<ProjectPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    ProjectModel,
+                    ProjectPublicModel,
                     r#"
                         SELECT project_id, project_type, org_id, name, slug, description, created_at, updated_at
                         FROM projects
@@ -170,7 +171,7 @@ impl ProjectsRepository for PgProjectsRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    ProjectModel,
+                    ProjectPublicModel,
                     r#"
                         SELECT project_id, project_type, org_id, name, slug, description, created_at, updated_at
                         FROM projects
@@ -188,7 +189,8 @@ impl ProjectsRepository for PgProjectsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<ProjectModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<ProjectPublicModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.project_id)
         } else {
@@ -203,13 +205,13 @@ impl ProjectsRepository for PgProjectsRepository {
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateProject,
-    ) -> HuxleyStoreResult<Option<ProjectModel>> {
+    ) -> HuxleyStoreResult<Option<ProjectPublicModel>> {
         let (set_name, name) = input.name.into_parts();
         let (set_slug, slug) = input.slug.into_parts();
         let (set_description, description) = input.description.into_parts();
 
         let result = sqlx::query_as!(
-            ProjectModel,
+            ProjectPublicModel,
             r#"
                 UPDATE projects
                 SET name = CASE WHEN $2 THEN $3::text ELSE name END,

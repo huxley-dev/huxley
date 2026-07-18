@@ -7,7 +7,7 @@ use crate::{HuxleyApiError, HuxleyApiResult};
 use huxley_store::{
     commands::variable::{CreateVariable, UpdateVariable},
     common::to_field,
-    models::variable::VariableModel,
+    models::variable::VariablePublicModel,
 };
 
 #[derive(Debug, Deserialize, TS)]
@@ -74,8 +74,8 @@ impl From<UpdateVariableRequest> for UpdateVariable {
     }
 }
 
-impl From<VariableModel> for VariableResponse {
-    fn from(var: VariableModel) -> Self {
+impl From<VariablePublicModel> for VariableResponse {
+    fn from(var: VariablePublicModel) -> Self {
         VariableResponse {
             var_id: var.var_id,
             org_id: var.org_id,

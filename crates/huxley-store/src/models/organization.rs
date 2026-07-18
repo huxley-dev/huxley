@@ -4,7 +4,19 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 #[derive(Debug, FromRow, Deserialize, Serialize)]
-pub struct OrganizationModel {
+pub struct OrganizationRowModel {
+    pub org_id: Uuid,
+    pub parent_id: Option<Uuid>,
+    pub name: String,
+    pub slug: String,
+    pub status: String,
+    pub settings: serde_json::Value,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, FromRow, Deserialize, Serialize)]
+pub struct OrganizationPublicModel {
     pub org_id: Uuid,
     pub parent_id: Option<Uuid>,
     pub name: String,

@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::app_setting::UpdateAppSetting,
     common::{Page, PageQuery, PageSort},
-    models::app_setting::AppSettingModel,
+    models::app_setting::AppSettingPublicModel,
 };
 
 #[async_trait]
@@ -15,23 +15,23 @@ pub trait AppSettingsRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<AppSettingModel>>;
+    ) -> HuxleyStoreResult<Option<AppSettingPublicModel>>;
     async fn find_by_name(
         &self,
         conn: &mut PgConnection,
         name: &str,
-    ) -> HuxleyStoreResult<Option<AppSettingModel>>;
+    ) -> HuxleyStoreResult<Option<AppSettingPublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<AppSettingModel>>;
+    ) -> HuxleyStoreResult<Page<AppSettingPublicModel>>;
     async fn update(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateAppSetting,
-    ) -> HuxleyStoreResult<Option<AppSettingModel>>;
+    ) -> HuxleyStoreResult<Option<AppSettingPublicModel>>;
 }
 
 pub struct PgAppSettingsRepository;
@@ -42,9 +42,9 @@ impl AppSettingsRepository for PgAppSettingsRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<AppSettingModel>> {
+    ) -> HuxleyStoreResult<Option<AppSettingPublicModel>> {
         let result = sqlx::query_as!(
-            AppSettingModel,
+            AppSettingPublicModel,
             r#"
                 SELECT app_set_id, name, value, created_at, updated_at
                 FROM app_settings
@@ -62,9 +62,9 @@ impl AppSettingsRepository for PgAppSettingsRepository {
         &self,
         conn: &mut PgConnection,
         name: &str,
-    ) -> HuxleyStoreResult<Option<AppSettingModel>> {
+    ) -> HuxleyStoreResult<Option<AppSettingPublicModel>> {
         let result = sqlx::query_as!(
-            AppSettingModel,
+            AppSettingPublicModel,
             r#"
                 SELECT app_set_id, name, value, created_at, updated_at
                 FROM app_settings
@@ -82,13 +82,13 @@ impl AppSettingsRepository for PgAppSettingsRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<AppSettingModel>> {
+    ) -> HuxleyStoreResult<Page<AppSettingPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    AppSettingModel,
+                    AppSettingPublicModel,
                     r#"
                         SELECT app_set_id, name, value, created_at, updated_at
                         FROM app_settings
@@ -104,7 +104,7 @@ impl AppSettingsRepository for PgAppSettingsRepository {
             }
             PageSort::Desc => {
                 sqlx::query_as!(
-                    AppSettingModel,
+                    AppSettingPublicModel,
                     r#"
                         SELECT app_set_id, name, value, created_at, updated_at
                         FROM app_settings
@@ -121,7 +121,7 @@ impl AppSettingsRepository for PgAppSettingsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<AppSettingModel> =
+        let items: Vec<AppSettingPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.app_set_id)
@@ -137,11 +137,11 @@ impl AppSettingsRepository for PgAppSettingsRepository {
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateAppSetting,
-    ) -> HuxleyStoreResult<Option<AppSettingModel>> {
+    ) -> HuxleyStoreResult<Option<AppSettingPublicModel>> {
         let (set_value, value) = input.value.into_parts();
 
         let result = sqlx::query_as!(
-            AppSettingModel,
+            AppSettingPublicModel,
             r#"
                 UPDATE app_settings
                 SET value = CASE WHEN $2 THEN $3::text ELSE value END

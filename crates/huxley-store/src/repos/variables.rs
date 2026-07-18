@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::variable::{CreateVariable, UpdateVariable},
     common::{Page, PageQuery, PageSort},
-    models::variable::VariableModel,
+    models::variable::VariablePublicModel,
 };
 
 #[async_trait]
@@ -15,34 +15,35 @@ pub trait VariablesRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateVariable,
-    ) -> HuxleyStoreResult<VariableModel>;
+    ) -> HuxleyStoreResult<VariablePublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<VariableModel>>;
+    ) -> HuxleyStoreResult<Option<VariablePublicModel>>;
     async fn find_by_org_id_and_name(
         &self,
         conn: &mut PgConnection,
         org_id: Uuid,
         name: &str,
-    ) -> HuxleyStoreResult<Option<VariableModel>>;
+    ) -> HuxleyStoreResult<Option<VariablePublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<VariableModel>>;
+    ) -> HuxleyStoreResult<Page<VariablePublicModel>>;
     async fn list_by_org_id(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<VariableModel>>;
+        org_id: Uuid,
+    ) -> HuxleyStoreResult<Page<VariablePublicModel>>;
     async fn update(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateVariable,
-    ) -> HuxleyStoreResult<Option<VariableModel>>;
+    ) -> HuxleyStoreResult<Option<VariablePublicModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -54,9 +55,9 @@ impl VariablesRepository for PgVariablesRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateVariable,
-    ) -> HuxleyStoreResult<VariableModel> {
+    ) -> HuxleyStoreResult<VariablePublicModel> {
         let result = sqlx::query_as!(
-            VariableModel,
+            VariablePublicModel,
             r#"
                 INSERT INTO variables (org_id, var_type, name, value, inheritable)
                 VALUES ($1, $2, $3, $4, $5)
@@ -78,9 +79,9 @@ impl VariablesRepository for PgVariablesRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<VariableModel>> {
+    ) -> HuxleyStoreResult<Option<VariablePublicModel>> {
         let result = sqlx::query_as!(
-            VariableModel,
+            VariablePublicModel,
             r#"
                 SELECT var_id, org_id, var_type, name, value, inheritable, created_at, updated_at
                 FROM variables
@@ -99,9 +100,9 @@ impl VariablesRepository for PgVariablesRepository {
         conn: &mut PgConnection,
         org_id: Uuid,
         name: &str,
-    ) -> HuxleyStoreResult<Option<VariableModel>> {
+    ) -> HuxleyStoreResult<Option<VariablePublicModel>> {
         let result = sqlx::query_as!(
-            VariableModel,
+            VariablePublicModel,
             r#"
                 SELECT var_id, org_id, var_type, name, value, inheritable, created_at, updated_at
                 FROM variables
@@ -120,13 +121,13 @@ impl VariablesRepository for PgVariablesRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<VariableModel>> {
+    ) -> HuxleyStoreResult<Page<VariablePublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    VariableModel,
+                    VariablePublicModel,
                     r#"
                         SELECT var_id, org_id, var_type, name, value, inheritable, created_at, updated_at
                         FROM variables
@@ -142,7 +143,7 @@ impl VariablesRepository for PgVariablesRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    VariableModel,
+                    VariablePublicModel,
                     r#"
                         SELECT var_id, org_id, var_type, name, value, inheritable, created_at, updated_at
                         FROM variables
@@ -159,9 +160,10 @@ impl VariablesRepository for PgVariablesRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<VariableModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<VariablePublicModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
-            items.last().map(|i| i.user_id)
+            items.last().map(|i| i.var_id)
         } else {
             None
         };
@@ -174,13 +176,13 @@ impl VariablesRepository for PgVariablesRepository {
         conn: &mut PgConnection,
         page: PageQuery,
         org_id: Uuid,
-    ) -> HuxleyStoreResult<Page<VariableModel>> {
+    ) -> HuxleyStoreResult<Page<VariablePublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    VariableModel,
+                    VariablePublicModel,
                     r#"
                         SELECT var_id, org_id, var_type, name, value, inheritable, created_at, updated_at
                         FROM variables
@@ -197,7 +199,7 @@ impl VariablesRepository for PgVariablesRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    VariableModel,
+                    VariablePublicModel,
                     r#"
                         SELECT var_id, org_id, var_type, name, value, inheritable, created_at, updated_at
                         FROM variables
@@ -215,9 +217,10 @@ impl VariablesRepository for PgVariablesRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<VariableModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<VariablePublicModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
-            items.last().map(|i| i.user_id)
+            items.last().map(|i| i.var_id)
         } else {
             None
         };
@@ -230,36 +233,28 @@ impl VariablesRepository for PgVariablesRepository {
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateVariable,
-    ) -> HuxleyStoreResult<Option<VariableModel>> {
+    ) -> HuxleyStoreResult<Option<VariablePublicModel>> {
         let (set_name, name) = input.name.into_parts();
         let (set_value, value) = input.value.into_parts();
         let (set_inheritable, inheritable) = input.inheritable.into_parts();
 
         let result = sqlx::query_as!(
-            VariableModel,
+            VariablePublicModel,
             r#"
                 UPDATE variables
                 SET name = CASE WHEN $2 THEN $3::text ELSE name END,
                     value = CASE WHEN $4 THEN $5::text ELSE value END,
-                    inheritable = CASE WHEN $6 THEN $7::boolean ELSE inheritable END,
+                    inheritable = CASE WHEN $6 THEN $7::boolean ELSE inheritable END
                 WHERE var_id = $1
                 RETURNING var_id, org_id, var_type, name, value, inheritable, created_at, updated_at
             "#,
             id,
             set_name,
             name,
-            set_email,
-            email,
-            set_email_verified,
-            email_verified,
-            set_password_hash,
-            password_hash,
-            set_status,
-            status,
-            set_preferences,
-            preferences,
-            set_app_role_id,
-            app_role_id,
+            set_value,
+            value,
+            set_inheritable,
+            inheritable,
         )
         .fetch_optional(conn)
         .await?;

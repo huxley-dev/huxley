@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::app_role::{CreateAppRole, UpdateAppRole},
     common::{Page, PageQuery, PageSort},
-    models::app_role::AppRoleModel,
+    models::app_role::AppRolePublicModel,
 };
 
 #[async_trait]
@@ -15,23 +15,23 @@ pub trait AppRolesRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateAppRole,
-    ) -> HuxleyStoreResult<AppRoleModel>;
+    ) -> HuxleyStoreResult<AppRolePublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<AppRoleModel>>;
+    ) -> HuxleyStoreResult<Option<AppRolePublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<AppRoleModel>>;
+    ) -> HuxleyStoreResult<Page<AppRolePublicModel>>;
     async fn update(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateAppRole,
-    ) -> HuxleyStoreResult<Option<AppRoleModel>>;
+    ) -> HuxleyStoreResult<Option<AppRolePublicModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -43,9 +43,9 @@ impl AppRolesRepository for PgAppRolesRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateAppRole,
-    ) -> HuxleyStoreResult<AppRoleModel> {
+    ) -> HuxleyStoreResult<AppRolePublicModel> {
         let result = sqlx::query_as!(
-            AppRoleModel,
+            AppRolePublicModel,
             r#"
                 INSERT INTO app_roles (name, description)
                 VALUES ($1, $2)
@@ -64,9 +64,9 @@ impl AppRolesRepository for PgAppRolesRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<AppRoleModel>> {
+    ) -> HuxleyStoreResult<Option<AppRolePublicModel>> {
         let result = sqlx::query_as!(
-            AppRoleModel,
+            AppRolePublicModel,
             r#"
                 SELECT app_role_id, name, description, built_in, created_at, updated_at
                 FROM app_roles
@@ -84,13 +84,13 @@ impl AppRolesRepository for PgAppRolesRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<AppRoleModel>> {
+    ) -> HuxleyStoreResult<Page<AppRolePublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    AppRoleModel,
+                    AppRolePublicModel,
                     r#"
                         SELECT app_role_id, name, description, built_in, created_at, updated_at
                         FROM app_roles
@@ -106,7 +106,7 @@ impl AppRolesRepository for PgAppRolesRepository {
             }
             PageSort::Desc => {
                 sqlx::query_as!(
-                    AppRoleModel,
+                    AppRolePublicModel,
                     r#"
                         SELECT app_role_id, name, description, built_in, created_at, updated_at
                         FROM app_roles
@@ -123,7 +123,8 @@ impl AppRolesRepository for PgAppRolesRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<AppRoleModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<AppRolePublicModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.app_role_id)
         } else {
@@ -138,12 +139,12 @@ impl AppRolesRepository for PgAppRolesRepository {
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateAppRole,
-    ) -> HuxleyStoreResult<Option<AppRoleModel>> {
+    ) -> HuxleyStoreResult<Option<AppRolePublicModel>> {
         let (set_name, name) = input.name.into_parts();
         let (set_description, description) = input.description.into_parts();
 
         let result = sqlx::query_as!(
-            AppRoleModel,
+            AppRolePublicModel,
             r#"
                 UPDATE app_roles
                 SET name = CASE WHEN $2 THEN $3::text ELSE name END,

@@ -4,7 +4,7 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 #[derive(Debug, FromRow, Deserialize, Serialize)]
-pub struct SessionModel {
+pub struct SessionRowModel {
     pub session_id: Uuid,
     pub user_id: Uuid,
     pub idp_id: Uuid,
@@ -16,6 +16,22 @@ pub struct SessionModel {
     pub last_seen_at: DateTime<Utc>,
     pub idle_expires_at: DateTime<Utc>,
     pub absolute_expires_at: DateTime<Utc>,
+    pub revoked_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, FromRow, Deserialize, Serialize)]
+pub struct SessionPublicModel {
+    pub session_id: Uuid,
+    pub user_id: Uuid,
+    pub idp_id: Uuid,
+    pub auth_method: String,
+    pub ip: Option<String>,
+    pub user_agent: Option<String>,
+    pub last_seen_at: Option<DateTime<Utc>>,
+    pub idle_expires_at: Option<DateTime<Utc>>,
+    pub absolute_expires_at: Option<DateTime<Utc>>,
     pub revoked_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,

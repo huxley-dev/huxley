@@ -7,7 +7,7 @@ use crate::{
     HuxleyStoreResult,
     commands::audit_log::CreateAuditLog,
     common::{Page, PageQuery, PageSort},
-    models::audit_log::AuditLogModel,
+    models::audit_log::AuditLogPublicModel,
 };
 
 #[async_trait]
@@ -16,23 +16,23 @@ pub trait AuditLogsRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateAuditLog,
-    ) -> HuxleyStoreResult<AuditLogModel>;
+    ) -> HuxleyStoreResult<AuditLogPublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<AuditLogModel>>;
+    ) -> HuxleyStoreResult<Option<AuditLogPublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<AuditLogModel>>;
+    ) -> HuxleyStoreResult<Page<AuditLogPublicModel>>;
     async fn list_by_user_id(
         &self,
         conn: &mut PgConnection,
         user_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<AuditLogModel>>;
+    ) -> HuxleyStoreResult<Page<AuditLogPublicModel>>;
     async fn delete_older_than(
         &self,
         conn: &mut PgConnection,
@@ -48,9 +48,9 @@ impl AuditLogsRepository for PgAuditLogsRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateAuditLog,
-    ) -> HuxleyStoreResult<AuditLogModel> {
+    ) -> HuxleyStoreResult<AuditLogPublicModel> {
         let result = sqlx::query_as!(
-            AuditLogModel,
+            AuditLogPublicModel,
             r#"
                 INSERT INTO audit_logs (user_id, event, target, metadata, ip, user_agent)
                 VALUES ($1, $2, $3, $4, CAST($5 AS TEXT)::inet, $6)
@@ -73,9 +73,9 @@ impl AuditLogsRepository for PgAuditLogsRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<AuditLogModel>> {
+    ) -> HuxleyStoreResult<Option<AuditLogPublicModel>> {
         let result = sqlx::query_as!(
-            AuditLogModel,
+            AuditLogPublicModel,
             r#"
                 SELECT aud_log_id, user_id, event, target, metadata, ip::text AS "ip?", user_agent, created_at, updated_at
                 FROM audit_logs
@@ -93,13 +93,13 @@ impl AuditLogsRepository for PgAuditLogsRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<AuditLogModel>> {
+    ) -> HuxleyStoreResult<Page<AuditLogPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    AuditLogModel,
+                    AuditLogPublicModel,
                     r#"
                         SELECT aud_log_id, user_id, event, target, metadata, ip::text AS "ip?", user_agent, created_at, updated_at
                         FROM audit_logs
@@ -115,7 +115,7 @@ impl AuditLogsRepository for PgAuditLogsRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    AuditLogModel,
+                    AuditLogPublicModel,
                     r#"
                         SELECT aud_log_id, user_id, event, target, metadata, ip::text AS "ip?", user_agent, created_at, updated_at
                         FROM audit_logs
@@ -132,7 +132,8 @@ impl AuditLogsRepository for PgAuditLogsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<AuditLogModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<AuditLogPublicModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.aud_log_id)
         } else {
@@ -147,13 +148,13 @@ impl AuditLogsRepository for PgAuditLogsRepository {
         conn: &mut PgConnection,
         user_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<AuditLogModel>> {
+    ) -> HuxleyStoreResult<Page<AuditLogPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    AuditLogModel,
+                    AuditLogPublicModel,
                     r#"
                         SELECT aud_log_id, user_id, event, target, metadata, ip::text AS "ip?", user_agent, created_at, updated_at
                         FROM audit_logs
@@ -170,7 +171,7 @@ impl AuditLogsRepository for PgAuditLogsRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    AuditLogModel,
+                    AuditLogPublicModel,
                     r#"
                         SELECT aud_log_id, user_id, event, target, metadata, ip::text AS "ip?", user_agent, created_at, updated_at
                         FROM audit_logs
@@ -188,7 +189,8 @@ impl AuditLogsRepository for PgAuditLogsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<AuditLogModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<AuditLogPublicModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.aud_log_id)
         } else {

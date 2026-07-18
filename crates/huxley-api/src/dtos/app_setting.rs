@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
-use crate::{HuxleyApiError, HuxleyApiResult};
 use huxley_store::{
-    commands::app_setting::UpdateAppSetting, common::to_field, models::app_setting::AppSettingModel,
+    commands::app_setting::UpdateAppSetting, common::to_field,
+    models::app_setting::AppSettingPublicModel,
 };
 
 #[derive(Debug, Deserialize, TS)]
@@ -20,7 +20,7 @@ pub struct UpdateAppSettingRequest {
 #[derive(Debug, Serialize, TS)]
 #[ts(export, export_to = "appsetting.model.ts")]
 #[serde(rename_all = "camelCase")]
-pub struct AppSettingResponseResponse {
+pub struct AppSettingResponse {
     pub app_set_id: Uuid,
     pub name: String,
     pub value: Option<String>,
@@ -36,8 +36,8 @@ impl From<UpdateAppSettingRequest> for UpdateAppSetting {
     }
 }
 
-impl From<AppSettingModel> for ProjectResponse {
-    fn from(setting: AppSettingModel) -> Self {
+impl From<AppSettingPublicModel> for AppSettingResponse {
+    fn from(setting: AppSettingPublicModel) -> Self {
         AppSettingResponse {
             app_set_id: setting.app_set_id,
             name: setting.name,

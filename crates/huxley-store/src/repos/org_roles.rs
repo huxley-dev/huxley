@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::org_role::{CreateOrgRole, UpdateOrgRole},
     common::{Page, PageQuery, PageSort},
-    models::org_role::OrgRoleModel,
+    models::org_role::OrgRolePublicModel,
 };
 
 #[async_trait]
@@ -15,23 +15,23 @@ pub trait OrgRolesRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateOrgRole,
-    ) -> HuxleyStoreResult<OrgRoleModel>;
+    ) -> HuxleyStoreResult<OrgRolePublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<OrgRoleModel>>;
+    ) -> HuxleyStoreResult<Option<OrgRolePublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<OrgRoleModel>>;
+    ) -> HuxleyStoreResult<Page<OrgRolePublicModel>>;
     async fn update(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateOrgRole,
-    ) -> HuxleyStoreResult<Option<OrgRoleModel>>;
+    ) -> HuxleyStoreResult<Option<OrgRolePublicModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -43,9 +43,9 @@ impl OrgRolesRepository for PgOrgRolesRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateOrgRole,
-    ) -> HuxleyStoreResult<OrgRoleModel> {
+    ) -> HuxleyStoreResult<OrgRolePublicModel> {
         let result = sqlx::query_as!(
-            OrgRoleModel,
+            OrgRolePublicModel,
             r#"
                 INSERT INTO org_roles (name, description)
                 VALUES ($1, $2)
@@ -64,9 +64,9 @@ impl OrgRolesRepository for PgOrgRolesRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<OrgRoleModel>> {
+    ) -> HuxleyStoreResult<Option<OrgRolePublicModel>> {
         let result = sqlx::query_as!(
-            OrgRoleModel,
+            OrgRolePublicModel,
             r#"
                 SELECT org_role_id, name, description, created_at, updated_at
                 FROM org_roles
@@ -84,13 +84,13 @@ impl OrgRolesRepository for PgOrgRolesRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<OrgRoleModel>> {
+    ) -> HuxleyStoreResult<Page<OrgRolePublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    OrgRoleModel,
+                    OrgRolePublicModel,
                     r#"
                         SELECT org_role_id, name, description, created_at, updated_at
                         FROM org_roles
@@ -106,7 +106,7 @@ impl OrgRolesRepository for PgOrgRolesRepository {
             }
             PageSort::Desc => {
                 sqlx::query_as!(
-                    OrgRoleModel,
+                    OrgRolePublicModel,
                     r#"
                         SELECT org_role_id, name, description, created_at, updated_at
                         FROM org_roles
@@ -123,7 +123,8 @@ impl OrgRolesRepository for PgOrgRolesRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<OrgRoleModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<OrgRolePublicModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.org_role_id)
         } else {
@@ -138,12 +139,12 @@ impl OrgRolesRepository for PgOrgRolesRepository {
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateOrgRole,
-    ) -> HuxleyStoreResult<Option<OrgRoleModel>> {
+    ) -> HuxleyStoreResult<Option<OrgRolePublicModel>> {
         let (set_name, name) = input.name.into_parts();
         let (set_description, description) = input.description.into_parts();
 
         let result = sqlx::query_as!(
-            OrgRoleModel,
+            OrgRolePublicModel,
             r#"
                 UPDATE org_roles
                 SET name = CASE WHEN $2 THEN $3::text ELSE name END,

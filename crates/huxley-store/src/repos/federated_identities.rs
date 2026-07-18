@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::federated_identity::{CreateFederatedIdentity, UpdateFederatedIdentity},
     common::{Page, PageQuery, PageSort},
-    models::federated_identity::FederatedIdentityModel,
+    models::federated_identity::FederatedIdentityPublicModel,
 };
 
 #[async_trait]
@@ -15,35 +15,35 @@ pub trait FederatedIdentitiesRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateFederatedIdentity,
-    ) -> HuxleyStoreResult<FederatedIdentityModel>;
+    ) -> HuxleyStoreResult<FederatedIdentityPublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<FederatedIdentityModel>>;
+    ) -> HuxleyStoreResult<Option<FederatedIdentityPublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<FederatedIdentityModel>>;
+    ) -> HuxleyStoreResult<Page<FederatedIdentityPublicModel>>;
     async fn list_by_user_id(
         &self,
         conn: &mut PgConnection,
         user_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<FederatedIdentityModel>>;
+    ) -> HuxleyStoreResult<Page<FederatedIdentityPublicModel>>;
     async fn list_by_idp_id(
         &self,
         conn: &mut PgConnection,
         idp_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<FederatedIdentityModel>>;
+    ) -> HuxleyStoreResult<Page<FederatedIdentityPublicModel>>;
     async fn update(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateFederatedIdentity,
-    ) -> HuxleyStoreResult<Option<FederatedIdentityModel>>;
+    ) -> HuxleyStoreResult<Option<FederatedIdentityPublicModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -55,9 +55,9 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateFederatedIdentity,
-    ) -> HuxleyStoreResult<FederatedIdentityModel> {
+    ) -> HuxleyStoreResult<FederatedIdentityPublicModel> {
         let result = sqlx::query_as!(
-            FederatedIdentityModel,
+            FederatedIdentityPublicModel,
             r#"
                 INSERT INTO federated_identities (user_id, idp_id, subject, email_at_idp, last_login_at)
                 VALUES ($1, $2, $3, $4, $5)
@@ -79,9 +79,9 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<FederatedIdentityModel>> {
+    ) -> HuxleyStoreResult<Option<FederatedIdentityPublicModel>> {
         let result = sqlx::query_as!(
-            FederatedIdentityModel,
+            FederatedIdentityPublicModel,
             r#"
                 SELECT fedid_id, user_id, idp_id, subject, email_at_idp, last_login_at, created_at, updated_at
                 FROM federated_identities
@@ -99,13 +99,13 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<FederatedIdentityModel>> {
+    ) -> HuxleyStoreResult<Page<FederatedIdentityPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    FederatedIdentityModel,
+                    FederatedIdentityPublicModel,
                     r#"
                         SELECT fedid_id, user_id, idp_id, subject, email_at_idp, last_login_at, created_at, updated_at
                         FROM federated_identities
@@ -121,7 +121,7 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    FederatedIdentityModel,
+                    FederatedIdentityPublicModel,
                     r#"
                         SELECT fedid_id, user_id, idp_id, subject, email_at_idp, last_login_at, created_at, updated_at
                         FROM federated_identities
@@ -138,7 +138,7 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<FederatedIdentityModel> =
+        let items: Vec<FederatedIdentityPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.fedid_id)
@@ -154,13 +154,13 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         conn: &mut PgConnection,
         user_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<FederatedIdentityModel>> {
+    ) -> HuxleyStoreResult<Page<FederatedIdentityPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    FederatedIdentityModel,
+                    FederatedIdentityPublicModel,
                     r#"
                         SELECT fedid_id, user_id, idp_id, subject, email_at_idp, last_login_at, created_at, updated_at
                         FROM federated_identities
@@ -177,7 +177,7 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    FederatedIdentityModel,
+                    FederatedIdentityPublicModel,
                     r#"
                         SELECT fedid_id, user_id, idp_id, subject, email_at_idp, last_login_at, created_at, updated_at
                         FROM federated_identities
@@ -195,7 +195,7 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<FederatedIdentityModel> =
+        let items: Vec<FederatedIdentityPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.fedid_id)
@@ -211,13 +211,13 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         conn: &mut PgConnection,
         idp_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<FederatedIdentityModel>> {
+    ) -> HuxleyStoreResult<Page<FederatedIdentityPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    FederatedIdentityModel,
+                    FederatedIdentityPublicModel,
                     r#"
                         SELECT fedid_id, user_id, idp_id, subject, email_at_idp, last_login_at, created_at, updated_at
                         FROM federated_identities
@@ -234,7 +234,7 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    FederatedIdentityModel,
+                    FederatedIdentityPublicModel,
                     r#"
                         SELECT fedid_id, user_id, idp_id, subject, email_at_idp, last_login_at, created_at, updated_at
                         FROM federated_identities
@@ -252,7 +252,7 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<FederatedIdentityModel> =
+        let items: Vec<FederatedIdentityPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.fedid_id)
@@ -268,7 +268,7 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateFederatedIdentity,
-    ) -> HuxleyStoreResult<Option<FederatedIdentityModel>> {
+    ) -> HuxleyStoreResult<Option<FederatedIdentityPublicModel>> {
         let (set_user_id, user_id) = input.user_id.into_parts();
         let (set_idp_id, idp_id) = input.idp_id.into_parts();
         let (set_subject, subject) = input.subject.into_parts();
@@ -276,7 +276,7 @@ impl FederatedIdentitiesRepository for PgFederatedIdentitiesRepository {
         let (set_last_login_at, last_login_at) = input.last_login_at.into_parts();
 
         let result = sqlx::query_as!(
-            FederatedIdentityModel,
+            FederatedIdentityPublicModel,
             r#"
                 UPDATE federated_identities
                 SET user_id = CASE WHEN $2 THEN $3::uuid ELSE user_id END,

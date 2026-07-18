@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::folder::{CreateFolder, UpdateFolder},
     common::{Page, PageQuery, PageSort},
-    models::folder::FolderModel,
+    models::folder::FolderPublicModel,
 };
 
 #[async_trait]
@@ -15,35 +15,35 @@ pub trait FoldersRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateFolder,
-    ) -> HuxleyStoreResult<FolderModel>;
+    ) -> HuxleyStoreResult<FolderPublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<FolderModel>>;
+    ) -> HuxleyStoreResult<Option<FolderPublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<FolderModel>>;
+    ) -> HuxleyStoreResult<Page<FolderPublicModel>>;
     async fn list_by_project_id(
         &self,
         conn: &mut PgConnection,
         project_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<FolderModel>>;
+    ) -> HuxleyStoreResult<Page<FolderPublicModel>>;
     async fn list_by_parent_id(
         &self,
         conn: &mut PgConnection,
         parent_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<FolderModel>>;
+    ) -> HuxleyStoreResult<Page<FolderPublicModel>>;
     async fn update(
         &self,
         connect: &mut PgConnection,
         id: Uuid,
         input: UpdateFolder,
-    ) -> HuxleyStoreResult<Option<FolderModel>>;
+    ) -> HuxleyStoreResult<Option<FolderPublicModel>>;
     async fn delete(&self, connect: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -55,9 +55,9 @@ impl FoldersRepository for PgFoldersRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateFolder,
-    ) -> HuxleyStoreResult<FolderModel> {
+    ) -> HuxleyStoreResult<FolderPublicModel> {
         let result = sqlx::query_as!(
-            FolderModel,
+            FolderPublicModel,
             r#"
                 INSERT INTO folders (project_id, parent_id, name, slug, description)
                 VALUES ($1, $2, $3, $4, $5)
@@ -79,9 +79,9 @@ impl FoldersRepository for PgFoldersRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<FolderModel>> {
+    ) -> HuxleyStoreResult<Option<FolderPublicModel>> {
         let result = sqlx::query_as!(
-            FolderModel,
+            FolderPublicModel,
             r#"
                 SELECT folder_id, project_id, parent_id, name, slug, description, created_at, updated_at
                 FROM folders
@@ -99,13 +99,13 @@ impl FoldersRepository for PgFoldersRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<FolderModel>> {
+    ) -> HuxleyStoreResult<Page<FolderPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    FolderModel,
+                    FolderPublicModel,
                     r#"
                         SELECT folder_id, project_id, parent_id, name, slug, description, created_at, updated_at
                         FROM folders
@@ -121,7 +121,7 @@ impl FoldersRepository for PgFoldersRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    FolderModel,
+                    FolderPublicModel,
                     r#"
                         SELECT folder_id, project_id, parent_id, name, slug, description, created_at, updated_at
                         FROM folders
@@ -138,7 +138,8 @@ impl FoldersRepository for PgFoldersRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<FolderModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<FolderPublicModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.folder_id)
         } else {
@@ -153,13 +154,13 @@ impl FoldersRepository for PgFoldersRepository {
         conn: &mut PgConnection,
         project_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<FolderModel>> {
+    ) -> HuxleyStoreResult<Page<FolderPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    FolderModel,
+                    FolderPublicModel,
                     r#"
                         SELECT folder_id, project_id, parent_id, name, slug, description, created_at, updated_at
                         FROM folders
@@ -176,7 +177,7 @@ impl FoldersRepository for PgFoldersRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    FolderModel,
+                    FolderPublicModel,
                     r#"
                         SELECT folder_id, project_id, parent_id, name, slug, description, created_at, updated_at
                         FROM folders
@@ -194,7 +195,8 @@ impl FoldersRepository for PgFoldersRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<FolderModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<FolderPublicModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.folder_id)
         } else {
@@ -209,13 +211,13 @@ impl FoldersRepository for PgFoldersRepository {
         conn: &mut PgConnection,
         parent_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<FolderModel>> {
+    ) -> HuxleyStoreResult<Page<FolderPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    FolderModel,
+                    FolderPublicModel,
                     r#"
                         SELECT folder_id, project_id, parent_id, name, slug, description, created_at, updated_at
                         FROM folders
@@ -232,7 +234,7 @@ impl FoldersRepository for PgFoldersRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    FolderModel,
+                    FolderPublicModel,
                     r#"
                         SELECT folder_id, project_id, parent_id, name, slug, description, created_at, updated_at
                         FROM folders
@@ -250,7 +252,8 @@ impl FoldersRepository for PgFoldersRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<FolderModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<FolderPublicModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.folder_id)
         } else {
@@ -265,14 +268,14 @@ impl FoldersRepository for PgFoldersRepository {
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateFolder,
-    ) -> HuxleyStoreResult<Option<FolderModel>> {
+    ) -> HuxleyStoreResult<Option<FolderPublicModel>> {
         let (set_parent_id, parent_id) = input.parent_id.into_parts();
         let (set_name, name) = input.name.into_parts();
         let (set_slug, slug) = input.slug.into_parts();
         let (set_description, description) = input.description.into_parts();
 
         let result = sqlx::query_as!(
-            FolderModel,
+            FolderPublicModel,
             r#"
                 UPDATE folders
                 SET parent_id = CASE WHEN $2 THEN $3::uuid ELSE parent_id END,

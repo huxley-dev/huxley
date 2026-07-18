@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::org_role_perm::CreateOrgRolePerm,
     common::{Page, PageQuery, PageSort},
-    models::org_role_perm::OrgRolePermModel,
+    models::org_role_perm::OrgRolePermPublicModel,
 };
 
 #[async_trait]
@@ -15,29 +15,29 @@ pub trait OrgRolePermsRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateOrgRolePerm,
-    ) -> HuxleyStoreResult<OrgRolePermModel>;
+    ) -> HuxleyStoreResult<OrgRolePermPublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<OrgRolePermModel>>;
+    ) -> HuxleyStoreResult<Option<OrgRolePermPublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<OrgRolePermModel>>;
+    ) -> HuxleyStoreResult<Page<OrgRolePermPublicModel>>;
     async fn list_by_org_role_id(
         &self,
         conn: &mut PgConnection,
         org_role_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<OrgRolePermModel>>;
+    ) -> HuxleyStoreResult<Page<OrgRolePermPublicModel>>;
     async fn list_by_permission(
         &self,
         conn: &mut PgConnection,
         permission: &str,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<OrgRolePermModel>>;
+    ) -> HuxleyStoreResult<Page<OrgRolePermPublicModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -49,9 +49,9 @@ impl OrgRolePermsRepository for PgOrgRolePermsRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateOrgRolePerm,
-    ) -> HuxleyStoreResult<OrgRolePermModel> {
+    ) -> HuxleyStoreResult<OrgRolePermPublicModel> {
         let org_role_perm = sqlx::query_as!(
-            OrgRolePermModel,
+            OrgRolePermPublicModel,
             r#"
                 INSERT INTO org_role_perms (org_role_id, permission)
                 VALUES ($1, $2)
@@ -70,9 +70,9 @@ impl OrgRolePermsRepository for PgOrgRolePermsRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<OrgRolePermModel>> {
+    ) -> HuxleyStoreResult<Option<OrgRolePermPublicModel>> {
         let result = sqlx::query_as!(
-            OrgRolePermModel,
+            OrgRolePermPublicModel,
             r#"
                 SELECT org_role_perm_id, org_role_id, permission, created_at, updated_at
                 FROM org_role_perms
@@ -90,13 +90,13 @@ impl OrgRolePermsRepository for PgOrgRolePermsRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<OrgRolePermModel>> {
+    ) -> HuxleyStoreResult<Page<OrgRolePermPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    OrgRolePermModel,
+                    OrgRolePermPublicModel,
                     r#"
                         SELECT org_role_perm_id, org_role_id, permission, created_at, updated_at
                         FROM org_role_perms
@@ -112,7 +112,7 @@ impl OrgRolePermsRepository for PgOrgRolePermsRepository {
             }
             PageSort::Desc => {
                 sqlx::query_as!(
-                    OrgRolePermModel,
+                    OrgRolePermPublicModel,
                     r#"
                         SELECT org_role_perm_id, org_role_id, permission, created_at, updated_at
                         FROM org_role_perms
@@ -129,7 +129,7 @@ impl OrgRolePermsRepository for PgOrgRolePermsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<OrgRolePermModel> =
+        let items: Vec<OrgRolePermPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.org_role_perm_id)
@@ -145,13 +145,13 @@ impl OrgRolePermsRepository for PgOrgRolePermsRepository {
         conn: &mut PgConnection,
         org_role_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<OrgRolePermModel>> {
+    ) -> HuxleyStoreResult<Page<OrgRolePermPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    OrgRolePermModel,
+                    OrgRolePermPublicModel,
                     r#"
                         SELECT org_role_perm_id, org_role_id, permission, created_at, updated_at
                         FROM org_role_perms
@@ -168,7 +168,7 @@ impl OrgRolePermsRepository for PgOrgRolePermsRepository {
             }
             PageSort::Desc => {
                 sqlx::query_as!(
-                    OrgRolePermModel,
+                    OrgRolePermPublicModel,
                     r#"
                         SELECT org_role_perm_id, org_role_id, permission, created_at, updated_at
                         FROM org_role_perms
@@ -186,7 +186,7 @@ impl OrgRolePermsRepository for PgOrgRolePermsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<OrgRolePermModel> =
+        let items: Vec<OrgRolePermPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.org_role_perm_id)
@@ -202,13 +202,13 @@ impl OrgRolePermsRepository for PgOrgRolePermsRepository {
         conn: &mut PgConnection,
         permission: &str,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<OrgRolePermModel>> {
+    ) -> HuxleyStoreResult<Page<OrgRolePermPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    OrgRolePermModel,
+                    OrgRolePermPublicModel,
                     r#"
                         SELECT org_role_perm_id, org_role_id, permission, created_at, updated_at
                         FROM org_role_perms
@@ -225,7 +225,7 @@ impl OrgRolePermsRepository for PgOrgRolePermsRepository {
             }
             PageSort::Desc => {
                 sqlx::query_as!(
-                    OrgRolePermModel,
+                    OrgRolePermPublicModel,
                     r#"
                         SELECT org_role_perm_id, org_role_id, permission, created_at, updated_at
                         FROM org_role_perms
@@ -243,7 +243,7 @@ impl OrgRolePermsRepository for PgOrgRolePermsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<OrgRolePermModel> =
+        let items: Vec<OrgRolePermPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.org_role_perm_id)

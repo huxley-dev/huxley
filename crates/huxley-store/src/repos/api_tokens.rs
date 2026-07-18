@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::api_token::{CreateApiToken, UpdateApiToken},
     common::{Page, PageQuery, PageSort},
-    models::api_token::ApiTokenModel,
+    models::api_token::ApiTokenPublicModel,
 };
 
 #[async_trait]
@@ -15,29 +15,29 @@ pub trait ApiTokensRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateApiToken,
-    ) -> HuxleyStoreResult<ApiTokenModel>;
+    ) -> HuxleyStoreResult<ApiTokenPublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<ApiTokenModel>>;
+    ) -> HuxleyStoreResult<Option<ApiTokenPublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<ApiTokenModel>>;
+    ) -> HuxleyStoreResult<Page<ApiTokenPublicModel>>;
     async fn list_by_user_id(
         &self,
         conn: &mut PgConnection,
         user_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<ApiTokenModel>>;
+    ) -> HuxleyStoreResult<Page<ApiTokenPublicModel>>;
     async fn update(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateApiToken,
-    ) -> HuxleyStoreResult<Option<ApiTokenModel>>;
+    ) -> HuxleyStoreResult<Option<ApiTokenPublicModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -49,13 +49,13 @@ impl ApiTokensRepository for PgApiTokensRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateApiToken,
-    ) -> HuxleyStoreResult<ApiTokenModel> {
+    ) -> HuxleyStoreResult<ApiTokenPublicModel> {
         let result = sqlx::query_as!(
-            ApiTokenModel,
+            ApiTokenPublicModel,
             r#"
                 INSERT INTO api_tokens (user_id, name, prefix, token_hash, scopes, expires_at)
                 VALUES ($1, $2, $3, $4, $5, $6)
-                RETURNING api_token_id, user_id, name, prefix, token_hash, scopes, last_used_at, expires_at, revoked_at, created_at, updated_at
+                RETURNING api_token_id, user_id, name, prefix, scopes, last_used_at, expires_at, revoked_at, created_at, updated_at
             "#,
             input.user_id,
             input.name,
@@ -74,11 +74,11 @@ impl ApiTokensRepository for PgApiTokensRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<ApiTokenModel>> {
+    ) -> HuxleyStoreResult<Option<ApiTokenPublicModel>> {
         let result = sqlx::query_as!(
-            ApiTokenModel,
+            ApiTokenPublicModel,
             r#"
-                SELECT api_token_id, user_id, name, prefix, token_hash, scopes, last_used_at, expires_at, revoked_at, created_at, updated_at
+                SELECT api_token_id, user_id, name, prefix, scopes, last_used_at, expires_at, revoked_at, created_at, updated_at
                 FROM api_tokens
                 WHERE api_token_id = $1
             "#,
@@ -94,15 +94,15 @@ impl ApiTokensRepository for PgApiTokensRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<ApiTokenModel>> {
+    ) -> HuxleyStoreResult<Page<ApiTokenPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    ApiTokenModel,
+                    ApiTokenPublicModel,
                     r#"
-                        SELECT api_token_id, user_id, name, prefix, scopes, token_hash, last_used_at, expires_at, revoked_at, created_at, updated_at
+                        SELECT api_token_id, user_id, name, prefix, scopes, last_used_at, expires_at, revoked_at, created_at, updated_at
                         FROM api_tokens
                         WHERE ($2::uuid IS NULL OR api_token_id >= $2)
                         ORDER BY api_token_id ASC
@@ -116,9 +116,9 @@ impl ApiTokensRepository for PgApiTokensRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    ApiTokenModel,
+                    ApiTokenPublicModel,
                     r#"
-                        SELECT api_token_id, user_id, name, prefix, scopes, token_hash, last_used_at, expires_at, revoked_at, created_at, updated_at
+                        SELECT api_token_id, user_id, name, prefix, scopes, last_used_at, expires_at, revoked_at, created_at, updated_at
                         FROM api_tokens
                         WHERE ($2::uuid IS NULL OR api_token_id <= $2)
                         ORDER BY api_token_id DESC
@@ -133,7 +133,8 @@ impl ApiTokensRepository for PgApiTokensRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<ApiTokenModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<ApiTokenPublicModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.api_token_id)
         } else {
@@ -148,15 +149,15 @@ impl ApiTokensRepository for PgApiTokensRepository {
         conn: &mut PgConnection,
         user_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<ApiTokenModel>> {
+    ) -> HuxleyStoreResult<Page<ApiTokenPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    ApiTokenModel,
+                    ApiTokenPublicModel,
                     r#"
-                        SELECT api_token_id, user_id, name, prefix, scopes, token_hash, last_used_at, expires_at, revoked_at, created_at, updated_at
+                        SELECT api_token_id, user_id, name, prefix, scopes, last_used_at, expires_at, revoked_at, created_at, updated_at
                         FROM api_tokens
                         WHERE ($2::uuid IS NULL OR api_token_id >= $2) AND (user_id = $3)
                         ORDER BY api_token_id ASC
@@ -171,9 +172,9 @@ impl ApiTokensRepository for PgApiTokensRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    ApiTokenModel,
+                    ApiTokenPublicModel,
                     r#"
-                        SELECT api_token_id, user_id, name, prefix, scopes, token_hash, last_used_at, expires_at, revoked_at, created_at, updated_at
+                        SELECT api_token_id, user_id, name, prefix, scopes, last_used_at, expires_at, revoked_at, created_at, updated_at
                         FROM api_tokens
                         WHERE ($2::uuid IS NULL OR api_token_id <= $2) AND (user_id = $3)
                         ORDER BY api_token_id DESC
@@ -189,7 +190,8 @@ impl ApiTokensRepository for PgApiTokensRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<ApiTokenModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<ApiTokenPublicModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.api_token_id)
         } else {
@@ -204,7 +206,7 @@ impl ApiTokensRepository for PgApiTokensRepository {
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateApiToken,
-    ) -> HuxleyStoreResult<Option<ApiTokenModel>> {
+    ) -> HuxleyStoreResult<Option<ApiTokenPublicModel>> {
         let (set_name, name) = input.name.into_parts();
         let (set_prefix, prefix) = input.prefix.into_parts();
         let (set_scopes, scopes) = input.scopes.into_parts();
@@ -213,7 +215,7 @@ impl ApiTokensRepository for PgApiTokensRepository {
         let (set_revoked_at, revoked_at) = input.revoked_at.into_parts();
 
         let result = sqlx::query_as!(
-            ApiTokenModel,
+            ApiTokenPublicModel,
             r#"
                 UPDATE api_tokens
                 SET name = CASE WHEN $2 THEN $3::text ELSE name END,
@@ -223,7 +225,7 @@ impl ApiTokensRepository for PgApiTokensRepository {
                     expires_at = CASE WHEN $10 THEN $11::timestamptz ELSE expires_at END,
                     revoked_at = CASE WHEN $12 THEN $13::timestamptz ELSE revoked_at END
                 WHERE api_token_id = $1
-                RETURNING api_token_id, user_id, name, prefix, token_hash, scopes, last_used_at, expires_at, revoked_at, created_at, updated_at
+                RETURNING api_token_id, user_id, name, prefix, scopes, last_used_at, expires_at, revoked_at, created_at, updated_at
             "#,
             id,
             set_name,

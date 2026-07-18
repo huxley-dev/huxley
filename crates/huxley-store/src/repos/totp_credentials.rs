@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::totp_credential::{CreateTotpCredential, UpdateTotpCredential},
     common::{Page, PageQuery, PageSort},
-    models::totp_credential::TotpCredentialModel,
+    models::totp_credential::TotpCredentialPublicModel,
 };
 
 #[async_trait]
@@ -15,28 +15,28 @@ pub trait TotpCredentialsRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateTotpCredential,
-    ) -> HuxleyStoreResult<TotpCredentialModel>;
+    ) -> HuxleyStoreResult<TotpCredentialPublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<TotpCredentialModel>>;
+    ) -> HuxleyStoreResult<Option<TotpCredentialPublicModel>>;
     async fn find_by_user_id(
         &self,
         conn: &mut PgConnection,
         user_id: Uuid,
-    ) -> HuxleyStoreResult<Option<TotpCredentialModel>>;
+    ) -> HuxleyStoreResult<Option<TotpCredentialPublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<TotpCredentialModel>>;
+    ) -> HuxleyStoreResult<Page<TotpCredentialPublicModel>>;
     async fn update(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateTotpCredential,
-    ) -> HuxleyStoreResult<Option<TotpCredentialModel>>;
+    ) -> HuxleyStoreResult<Option<TotpCredentialPublicModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -48,13 +48,13 @@ impl TotpCredentialsRepository for PgTotpCredentialsRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateTotpCredential,
-    ) -> HuxleyStoreResult<TotpCredentialModel> {
+    ) -> HuxleyStoreResult<TotpCredentialPublicModel> {
         let result = sqlx::query_as!(
-            TotpCredentialModel,
+            TotpCredentialPublicModel,
             r#"
                 INSERT INTO totp_credentials (user_id, secret_enc, confirmed_at)
                 VALUES ($1, $2, $3)
-                RETURNING totp_cred_id, user_id, confirmed_at, secret_enc, created_at, updated_at
+                RETURNING totp_cred_id, user_id, confirmed_at, created_at, updated_at
             "#,
             input.user_id,
             input.secret_enc,
@@ -70,11 +70,11 @@ impl TotpCredentialsRepository for PgTotpCredentialsRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<TotpCredentialModel>> {
+    ) -> HuxleyStoreResult<Option<TotpCredentialPublicModel>> {
         let result = sqlx::query_as!(
-            TotpCredentialModel,
+            TotpCredentialPublicModel,
             r#"
-                SELECT totp_cred_id, user_id, confirmed_at, secret_enc, created_at, updated_at
+                SELECT totp_cred_id, user_id, confirmed_at, created_at, updated_at
                 FROM totp_credentials
                 WHERE totp_cred_id = $1
             "#,
@@ -90,11 +90,11 @@ impl TotpCredentialsRepository for PgTotpCredentialsRepository {
         &self,
         conn: &mut PgConnection,
         user_id: Uuid,
-    ) -> HuxleyStoreResult<Option<TotpCredentialModel>> {
+    ) -> HuxleyStoreResult<Option<TotpCredentialPublicModel>> {
         let result = sqlx::query_as!(
-            TotpCredentialModel,
+            TotpCredentialPublicModel,
             r#"
-                SELECT totp_cred_id, user_id, confirmed_at, secret_enc, created_at, updated_at
+                SELECT totp_cred_id, user_id, confirmed_at, created_at, updated_at
                 FROM totp_credentials
                 WHERE user_id = $1
             "#,
@@ -110,15 +110,15 @@ impl TotpCredentialsRepository for PgTotpCredentialsRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<TotpCredentialModel>> {
+    ) -> HuxleyStoreResult<Page<TotpCredentialPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    TotpCredentialModel,
+                    TotpCredentialPublicModel,
                     r#"
-                        SELECT totp_cred_id, user_id, confirmed_at, secret_enc, created_at, updated_at
+                        SELECT totp_cred_id, user_id, confirmed_at, created_at, updated_at
                         FROM totp_credentials
                         WHERE ($2::uuid IS NULL OR totp_cred_id >= $2)
                         ORDER BY totp_cred_id ASC
@@ -132,9 +132,9 @@ impl TotpCredentialsRepository for PgTotpCredentialsRepository {
             }
             PageSort::Desc => {
                 sqlx::query_as!(
-                    TotpCredentialModel,
+                    TotpCredentialPublicModel,
                     r#"
-                        SELECT totp_cred_id, user_id, confirmed_at, secret_enc, created_at, updated_at
+                        SELECT totp_cred_id, user_id, confirmed_at, created_at, updated_at
                         FROM totp_credentials
                         WHERE ($2::uuid IS NULL OR totp_cred_id <= $2)
                         ORDER BY totp_cred_id DESC
@@ -149,7 +149,7 @@ impl TotpCredentialsRepository for PgTotpCredentialsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<TotpCredentialModel> =
+        let items: Vec<TotpCredentialPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.totp_cred_id)
@@ -165,16 +165,16 @@ impl TotpCredentialsRepository for PgTotpCredentialsRepository {
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateTotpCredential,
-    ) -> HuxleyStoreResult<Option<TotpCredentialModel>> {
+    ) -> HuxleyStoreResult<Option<TotpCredentialPublicModel>> {
         let (set_confirmed_at, confirmed_at) = input.confirmed_at.into_parts();
 
         let result = sqlx::query_as!(
-            TotpCredentialModel,
+            TotpCredentialPublicModel,
             r#"
                 UPDATE totp_credentials
                 SET confirmed_at = CASE WHEN $2 THEN $3::timestamptz ELSE confirmed_at END
                 WHERE totp_cred_id = $1
-                RETURNING totp_cred_id, user_id, confirmed_at, secret_enc, created_at, updated_at
+                RETURNING totp_cred_id, user_id, confirmed_at, created_at, updated_at
             "#,
             id,
             set_confirmed_at,

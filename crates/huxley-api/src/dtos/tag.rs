@@ -7,7 +7,7 @@ use crate::{HuxleyApiError, HuxleyApiResult};
 use huxley_store::{
     commands::tag::{CreateTag, UpdateTag},
     common::to_field,
-    models::tag::TagModel,
+    models::tag::TagPublicModel,
 };
 
 #[derive(Debug, Deserialize, TS)]
@@ -71,8 +71,8 @@ impl From<UpdateTagRequest> for UpdateTag {
     }
 }
 
-impl From<TagModel> for TagResponse {
-    fn from(tag: TagModel) -> Self {
+impl From<TagPublicModel> for TagResponse {
+    fn from(tag: TagPublicModel) -> Self {
         TagResponse {
             tag_id: tag.tag_id,
             tag_type: tag.tag_type,

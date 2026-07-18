@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::verification_token::{CreateVerificationToken, UpdateVerificationToken},
     common::{Page, PageQuery, PageSort},
-    models::verification_token::VerificationTokenModel,
+    models::verification_token::VerificationTokenPublicModel,
 };
 
 #[async_trait]
@@ -15,29 +15,29 @@ pub trait VerificationTokensRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateVerificationToken,
-    ) -> HuxleyStoreResult<VerificationTokenModel>;
+    ) -> HuxleyStoreResult<VerificationTokenPublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<VerificationTokenModel>>;
+    ) -> HuxleyStoreResult<Option<VerificationTokenPublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<VerificationTokenModel>>;
+    ) -> HuxleyStoreResult<Page<VerificationTokenPublicModel>>;
     async fn list_by_user_id(
         &self,
         conn: &mut PgConnection,
         user_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<VerificationTokenModel>>;
+    ) -> HuxleyStoreResult<Page<VerificationTokenPublicModel>>;
     async fn update(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateVerificationToken,
-    ) -> HuxleyStoreResult<Option<VerificationTokenModel>>;
+    ) -> HuxleyStoreResult<Option<VerificationTokenPublicModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -49,13 +49,13 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateVerificationToken,
-    ) -> HuxleyStoreResult<VerificationTokenModel> {
+    ) -> HuxleyStoreResult<VerificationTokenPublicModel> {
         let result = sqlx::query_as!(
-            VerificationTokenModel,
+            VerificationTokenPublicModel,
             r#"
                 INSERT INTO verification_tokens (user_id, purpose, token_hash, used_at)
                 VALUES ($1, $2, $3, $4)
-                RETURNING ver_token_id, user_id, purpose, token_hash, used_at, created_at, updated_at
+                RETURNING ver_token_id, user_id, purpose, used_at, created_at, updated_at
             "#,
             input.user_id,
             input.purpose,
@@ -72,11 +72,11 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<VerificationTokenModel>> {
+    ) -> HuxleyStoreResult<Option<VerificationTokenPublicModel>> {
         let result = sqlx::query_as!(
-            VerificationTokenModel,
+            VerificationTokenPublicModel,
             r#"
-                SELECT ver_token_id, user_id, purpose, token_hash, used_at, created_at, updated_at
+                SELECT ver_token_id, user_id, purpose, used_at, created_at, updated_at
                 FROM verification_tokens
                 WHERE ver_token_id = $1
             "#,
@@ -92,15 +92,15 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<VerificationTokenModel>> {
+    ) -> HuxleyStoreResult<Page<VerificationTokenPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    VerificationTokenModel,
+                    VerificationTokenPublicModel,
                     r#"
-                        SELECT ver_token_id, user_id, purpose, token_hash, used_at, created_at, updated_at
+                        SELECT ver_token_id, user_id, purpose, used_at, created_at, updated_at
                         FROM verification_tokens
                         WHERE ($2::uuid IS NULL OR ver_token_id >= $2)
                         ORDER BY ver_token_id ASC
@@ -111,12 +111,12 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
                 )
                 .fetch_all(conn)
                 .await?
-            },
+            }
             PageSort::Desc => {
                 sqlx::query_as!(
-                    VerificationTokenModel,
+                    VerificationTokenPublicModel,
                     r#"
-                        SELECT ver_token_id, user_id, purpose, token_hash, used_at, created_at, updated_at
+                        SELECT ver_token_id, user_id, purpose, used_at, created_at, updated_at
                         FROM verification_tokens
                         WHERE ($2::uuid IS NULL OR ver_token_id <= $2)
                         ORDER BY ver_token_id DESC
@@ -131,7 +131,7 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<VerificationTokenModel> =
+        let items: Vec<VerificationTokenPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.ver_token_id)
@@ -147,15 +147,15 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
         conn: &mut PgConnection,
         user_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<VerificationTokenModel>> {
+    ) -> HuxleyStoreResult<Page<VerificationTokenPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    VerificationTokenModel,
+                    VerificationTokenPublicModel,
                     r#"
-                        SELECT ver_token_id, user_id, purpose, token_hash, used_at, created_at, updated_at
+                        SELECT ver_token_id, user_id, purpose, used_at, created_at, updated_at
                         FROM verification_tokens
                         WHERE ($2::uuid IS NULL OR ver_token_id >= $2) AND (user_id = $3)
                         ORDER BY ver_token_id ASC
@@ -167,12 +167,12 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
                 )
                 .fetch_all(conn)
                 .await?
-            },
+            }
             PageSort::Desc => {
                 sqlx::query_as!(
-                    VerificationTokenModel,
+                    VerificationTokenPublicModel,
                     r#"
-                        SELECT ver_token_id, user_id, purpose, token_hash, used_at, created_at, updated_at
+                        SELECT ver_token_id, user_id, purpose, used_at, created_at, updated_at
                         FROM verification_tokens
                         WHERE ($2::uuid IS NULL OR ver_token_id <= $2) AND (user_id = $3)
                         ORDER BY ver_token_id DESC
@@ -188,7 +188,7 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<VerificationTokenModel> =
+        let items: Vec<VerificationTokenPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.ver_token_id)
@@ -204,16 +204,16 @@ impl VerificationTokensRepository for PgVerificationTokensRepository {
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateVerificationToken,
-    ) -> HuxleyStoreResult<Option<VerificationTokenModel>> {
+    ) -> HuxleyStoreResult<Option<VerificationTokenPublicModel>> {
         let (set_used_at, used_at) = input.used_at.into_parts();
 
         let result = sqlx::query_as!(
-            VerificationTokenModel,
+            VerificationTokenPublicModel,
             r#"
                 UPDATE verification_tokens
                 SET used_at = CASE WHEN $2 THEN $3::timestamptz ELSE used_at END
                 WHERE ver_token_id = $1
-                RETURNING ver_token_id, user_id, purpose, token_hash, used_at, created_at, updated_at
+                RETURNING ver_token_id, user_id, purpose, used_at, created_at, updated_at
             "#,
             id,
             set_used_at,

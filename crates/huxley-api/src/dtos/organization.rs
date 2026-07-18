@@ -5,9 +5,9 @@ use uuid::Uuid;
 
 use crate::{HuxleyApiError, HuxleyApiResult};
 use huxley_store::{
-    commands::{CreateOrganization, UpdateOrganization},
+    commands::organization::{CreateOrganization, UpdateOrganization},
     common::to_field,
-    models::OrganizationModel,
+    models::organization::OrganizationPublicModel,
 };
 
 #[derive(Debug, Deserialize, TS)]
@@ -82,8 +82,8 @@ impl From<UpdateOrganizationRequest> for UpdateOrganization {
     }
 }
 
-impl From<OrganizationModel> for OrganizationResponse {
-    fn from(org: OrganizationModel) -> Self {
+impl From<OrganizationPublicModel> for OrganizationResponse {
+    fn from(org: OrganizationPublicModel) -> Self {
         OrganizationResponse {
             org_id: org.org_id,
             parent_id: org.parent_id,

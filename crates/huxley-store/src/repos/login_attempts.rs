@@ -7,7 +7,7 @@ use crate::{
     HuxleyStoreResult,
     commands::login_attempt::CreateLoginAttempt,
     common::{Page, PageQuery, PageSort},
-    models::login_attempt::LoginAttemptModel,
+    models::login_attempt::LoginAttemptPublicModel,
 };
 
 #[async_trait]
@@ -16,23 +16,23 @@ pub trait LoginAttemptsRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateLoginAttempt,
-    ) -> HuxleyStoreResult<LoginAttemptModel>;
+    ) -> HuxleyStoreResult<LoginAttemptPublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<LoginAttemptModel>>;
+    ) -> HuxleyStoreResult<Option<LoginAttemptPublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<LoginAttemptModel>>;
+    ) -> HuxleyStoreResult<Page<LoginAttemptPublicModel>>;
     async fn list_by_user_id(
         &self,
         conn: &mut PgConnection,
         user_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<LoginAttemptModel>>;
+    ) -> HuxleyStoreResult<Page<LoginAttemptPublicModel>>;
     async fn delete_older_than(
         &self,
         conn: &mut PgConnection,
@@ -48,9 +48,9 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateLoginAttempt,
-    ) -> HuxleyStoreResult<LoginAttemptModel> {
+    ) -> HuxleyStoreResult<LoginAttemptPublicModel> {
         let result = sqlx::query_as!(
-            LoginAttemptModel,
+            LoginAttemptPublicModel,
             r#"
                 INSERT INTO login_attempts (user_id, email, ip, user_agent, successful)
                 VALUES ($1, $2, CAST($3 AS TEXT)::inet, $4, $5)
@@ -72,9 +72,9 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<LoginAttemptModel>> {
+    ) -> HuxleyStoreResult<Option<LoginAttemptPublicModel>> {
         let result = sqlx::query_as!(
-            LoginAttemptModel,
+            LoginAttemptPublicModel,
             r#"
                 SELECT login_attempt_id, user_id, email, ip::text AS "ip?", user_agent, successful, created_at, updated_at
                 FROM login_attempts
@@ -92,13 +92,13 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<LoginAttemptModel>> {
+    ) -> HuxleyStoreResult<Page<LoginAttemptPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    LoginAttemptModel,
+                    LoginAttemptPublicModel,
                     r#"
                         SELECT login_attempt_id, user_id, email, ip::text AS "ip?", user_agent, successful, created_at, updated_at
                         FROM login_attempts
@@ -114,7 +114,7 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    LoginAttemptModel,
+                    LoginAttemptPublicModel,
                     r#"
                         SELECT login_attempt_id, user_id, email, ip::text AS "ip?", user_agent, successful, created_at, updated_at
                         FROM login_attempts
@@ -131,7 +131,7 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<LoginAttemptModel> =
+        let items: Vec<LoginAttemptPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.login_attempt_id)
@@ -147,13 +147,13 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
         conn: &mut PgConnection,
         user_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<LoginAttemptModel>> {
+    ) -> HuxleyStoreResult<Page<LoginAttemptPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    LoginAttemptModel,
+                    LoginAttemptPublicModel,
                     r#"
                         SELECT login_attempt_id, user_id, email, ip::text AS "ip?", user_agent, successful, created_at, updated_at
                         FROM login_attempts
@@ -170,7 +170,7 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    LoginAttemptModel,
+                    LoginAttemptPublicModel,
                     r#"
                         SELECT login_attempt_id, user_id, email, ip::text AS "ip?", user_agent, successful, created_at, updated_at
                         FROM login_attempts
@@ -188,7 +188,7 @@ impl LoginAttemptsRepository for PgLoginAttemptsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<LoginAttemptModel> =
+        let items: Vec<LoginAttemptPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.login_attempt_id)

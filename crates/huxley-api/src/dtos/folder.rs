@@ -7,7 +7,7 @@ use crate::{HuxleyApiError, HuxleyApiResult};
 use huxley_store::{
     commands::folder::{CreateFolder, UpdateFolder},
     common::to_field,
-    models::folder::FolderModel,
+    models::folder::FolderPublicModel,
 };
 
 #[derive(Debug, Deserialize, TS)]
@@ -78,8 +78,8 @@ impl From<UpdateFolderRequest> for UpdateFolder {
     }
 }
 
-impl From<FolderModel> for FolderResponse {
-    fn from(folder: FolderModel) -> Self {
+impl From<FolderPublicModel> for FolderResponse {
+    fn from(folder: FolderPublicModel) -> Self {
         FolderResponse {
             folder_id: folder.folder_id,
             project_id: folder.project_id,

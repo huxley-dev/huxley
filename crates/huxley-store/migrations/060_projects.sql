@@ -16,11 +16,6 @@ CREATE TABLE IF NOT EXISTS projects (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    CONSTRAINT check_owner_type CHECK (
-        (org_id IS NOT NULL AND user_id IS NULL) OR
-        (org_id IS NULL AND user_id IS NOT NULL)
-    ),
-
     CONSTRAINT unique_project_name_per_org UNIQUE (name, org_id),
     CONSTRAINT unique_project_slug_per_org UNIQUE (slug, org_id)
 );

@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::app_role_perm::CreateAppRolePerm,
     common::{Page, PageQuery, PageSort},
-    models::app_role_perm::AppRolePermModel,
+    models::app_role_perm::AppRolePermPublicModel,
 };
 
 #[async_trait]
@@ -15,23 +15,23 @@ pub trait AppRolePermsRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateAppRolePerm,
-    ) -> HuxleyStoreResult<AppRolePermModel>;
+    ) -> HuxleyStoreResult<AppRolePermPublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<AppRolePermModel>>;
+    ) -> HuxleyStoreResult<Option<AppRolePermPublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<AppRolePermModel>>;
+    ) -> HuxleyStoreResult<Page<AppRolePermPublicModel>>;
     async fn list_by_app_role_id(
         &self,
         conn: &mut PgConnection,
         app_role_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<AppRolePermModel>>;
+    ) -> HuxleyStoreResult<Page<AppRolePermPublicModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -43,9 +43,9 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateAppRolePerm,
-    ) -> HuxleyStoreResult<AppRolePermModel> {
+    ) -> HuxleyStoreResult<AppRolePermPublicModel> {
         let result = sqlx::query_as!(
-            AppRolePermModel,
+            AppRolePermPublicModel,
             r#"
                 INSERT INTO app_role_perms (app_role_id, permission)
                 VALUES ($1, $2)
@@ -64,9 +64,9 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<AppRolePermModel>> {
+    ) -> HuxleyStoreResult<Option<AppRolePermPublicModel>> {
         let result = sqlx::query_as!(
-            AppRolePermModel,
+            AppRolePermPublicModel,
             r#"
                 SELECT app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
                 FROM app_role_perms
@@ -84,13 +84,13 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<AppRolePermModel>> {
+    ) -> HuxleyStoreResult<Page<AppRolePermPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    AppRolePermModel,
+                    AppRolePermPublicModel,
                     r#"
                         SELECT app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
                         FROM app_role_perms
@@ -106,7 +106,7 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    AppRolePermModel,
+                    AppRolePermPublicModel,
                     r#"
                         SELECT app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
                         FROM app_role_perms
@@ -123,7 +123,7 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<AppRolePermModel> =
+        let items: Vec<AppRolePermPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.app_role_perm_id)
@@ -139,13 +139,13 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
         conn: &mut PgConnection,
         app_role_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<AppRolePermModel>> {
+    ) -> HuxleyStoreResult<Page<AppRolePermPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    AppRolePermModel,
+                    AppRolePermPublicModel,
                     r#"
                         SELECT app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
                         FROM app_role_perms
@@ -162,7 +162,7 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    AppRolePermModel,
+                    AppRolePermPublicModel,
                     r#"
                         SELECT app_role_perm_id, app_role_id, permission, built_in, created_at, updated_at
                         FROM app_role_perms
@@ -180,7 +180,7 @@ impl AppRolePermsRepository for PgAppRolePermsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<AppRolePermModel> =
+        let items: Vec<AppRolePermPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.app_role_perm_id)

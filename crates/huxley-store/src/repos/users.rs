@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::user::{CreateUser, UpdateUser},
     common::{Page, PageQuery, PageSort},
-    models::user::UserModel,
+    models::user::UserPublicModel,
 };
 
 #[async_trait]
@@ -15,28 +15,28 @@ pub trait UsersRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateUser,
-    ) -> HuxleyStoreResult<UserModel>;
+    ) -> HuxleyStoreResult<UserPublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<UserModel>>;
+    ) -> HuxleyStoreResult<Option<UserPublicModel>>;
     async fn find_by_email(
         &self,
         conn: &mut PgConnection,
         email: &str,
-    ) -> HuxleyStoreResult<Option<UserModel>>;
+    ) -> HuxleyStoreResult<Option<UserPublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<UserModel>>;
+    ) -> HuxleyStoreResult<Page<UserPublicModel>>;
     async fn update(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateUser,
-    ) -> HuxleyStoreResult<Option<UserModel>>;
+    ) -> HuxleyStoreResult<Option<UserPublicModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -48,13 +48,13 @@ impl UsersRepository for PgUsersRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateUser,
-    ) -> HuxleyStoreResult<UserModel> {
+    ) -> HuxleyStoreResult<UserPublicModel> {
         let result = sqlx::query_as!(
-            UserModel,
+            UserPublicModel,
             r#"
                 INSERT INTO users (name, email, email_verified, password_hash, status, preferences, app_role_id)
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
-                RETURNING user_id, name, email, email_verified, password_hash, status, preferences, app_role_id, created_at, updated_at
+                RETURNING user_id, name, email, email_verified, status, preferences, app_role_id, created_at, updated_at
             "#,
             input.name,
             input.email,
@@ -74,11 +74,11 @@ impl UsersRepository for PgUsersRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<UserModel>> {
+    ) -> HuxleyStoreResult<Option<UserPublicModel>> {
         let result = sqlx::query_as!(
-            UserModel,
+            UserPublicModel,
             r#"
-                SELECT user_id, name, email, email_verified, password_hash, status, preferences, app_role_id, created_at, updated_at
+                SELECT user_id, name, email, email_verified, status, preferences, app_role_id, created_at, updated_at
                 FROM users
                 WHERE user_id = $1
             "#,
@@ -94,11 +94,11 @@ impl UsersRepository for PgUsersRepository {
         &self,
         conn: &mut PgConnection,
         email: &str,
-    ) -> HuxleyStoreResult<Option<UserModel>> {
+    ) -> HuxleyStoreResult<Option<UserPublicModel>> {
         let result = sqlx::query_as!(
-            UserModel,
+            UserPublicModel,
             r#"
-                SELECT user_id, name, email, email_verified, password_hash, status, preferences, app_role_id, created_at, updated_at
+                SELECT user_id, name, email, email_verified, status, preferences, app_role_id, created_at, updated_at
                 FROM users
                 WHERE email = $1
             "#,
@@ -114,15 +114,15 @@ impl UsersRepository for PgUsersRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<UserModel>> {
+    ) -> HuxleyStoreResult<Page<UserPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    UserModel,
+                    UserPublicModel,
                     r#"
-                        SELECT user_id, name, email, email_verified, password_hash, status, preferences, app_role_id, created_at, updated_at
+                        SELECT user_id, name, email, email_verified, status, preferences, app_role_id, created_at, updated_at
                         FROM users
                         WHERE ($2::uuid IS NULL OR user_id >= $2)
                         ORDER BY user_id ASC
@@ -136,9 +136,9 @@ impl UsersRepository for PgUsersRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    UserModel,
+                    UserPublicModel,
                     r#"
-                        SELECT user_id, name, email, email_verified, password_hash, status, preferences, app_role_id, created_at, updated_at
+                        SELECT user_id, name, email, email_verified, status, preferences, app_role_id, created_at, updated_at
                         FROM users
                         WHERE ($2::uuid IS NULL OR user_id <= $2)
                         ORDER BY user_id DESC
@@ -153,7 +153,8 @@ impl UsersRepository for PgUsersRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<UserModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<UserPublicModel> =
+            result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.user_id)
         } else {
@@ -168,7 +169,7 @@ impl UsersRepository for PgUsersRepository {
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateUser,
-    ) -> HuxleyStoreResult<Option<UserModel>> {
+    ) -> HuxleyStoreResult<Option<UserPublicModel>> {
         let (set_name, name) = input.name.into_parts();
         let (set_email, email) = input.email.into_parts();
         let (set_email_verified, email_verified) = input.email_verified.into_parts();
@@ -178,7 +179,7 @@ impl UsersRepository for PgUsersRepository {
         let (set_app_role_id, app_role_id) = input.app_role_id.into_parts();
 
         let result = sqlx::query_as!(
-            UserModel,
+            UserPublicModel,
             r#"
                 UPDATE users
                 SET name = CASE WHEN $2 THEN $3::text ELSE name END,
@@ -189,7 +190,7 @@ impl UsersRepository for PgUsersRepository {
                     preferences = CASE WHEN $12 THEN $13::jsonb ELSE preferences END,
                     app_role_id = CASE WHEN $14 THEN $15::uuid ELSE app_role_id END
                 WHERE user_id = $1
-                RETURNING user_id, name, email, email_verified, password_hash, status, preferences, app_role_id, created_at, updated_at
+                RETURNING user_id, name, email, email_verified, status, preferences, app_role_id, created_at, updated_at
             "#,
             id,
             set_name,

@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::organization::{CreateOrganization, UpdateOrganization},
     common::{Page, PageQuery, PageSort},
-    models::organization::OrganizationModel,
+    models::organization::OrganizationPublicModel,
 };
 
 #[async_trait]
@@ -15,29 +15,29 @@ pub trait OrganizationsRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateOrganization,
-    ) -> HuxleyStoreResult<OrganizationModel>;
+    ) -> HuxleyStoreResult<OrganizationPublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<OrganizationModel>>;
+    ) -> HuxleyStoreResult<Option<OrganizationPublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<OrganizationModel>>;
+    ) -> HuxleyStoreResult<Page<OrganizationPublicModel>>;
     async fn list_by_parent_id(
         &self,
         conn: &mut PgConnection,
         parent_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<OrganizationModel>>;
+    ) -> HuxleyStoreResult<Page<OrganizationPublicModel>>;
     async fn update(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateOrganization,
-    ) -> HuxleyStoreResult<Option<OrganizationModel>>;
+    ) -> HuxleyStoreResult<Option<OrganizationPublicModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -49,9 +49,9 @@ impl OrganizationsRepository for PgOrganizationsRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateOrganization,
-    ) -> HuxleyStoreResult<OrganizationModel> {
+    ) -> HuxleyStoreResult<OrganizationPublicModel> {
         let result = sqlx::query_as!(
-            OrganizationModel,
+            OrganizationPublicModel,
             r#"
                 INSERT INTO organizations (parent_id, name, slug, status, settings)
                 VALUES ($1, $2, $3, $4, $5)
@@ -73,9 +73,9 @@ impl OrganizationsRepository for PgOrganizationsRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<OrganizationModel>> {
+    ) -> HuxleyStoreResult<Option<OrganizationPublicModel>> {
         let result = sqlx::query_as!(
-            OrganizationModel,
+            OrganizationPublicModel,
             r#"
                 SELECT org_id, parent_id, name, slug, status, settings, created_at, updated_at
                 FROM organizations
@@ -93,13 +93,13 @@ impl OrganizationsRepository for PgOrganizationsRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<OrganizationModel>> {
+    ) -> HuxleyStoreResult<Page<OrganizationPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    OrganizationModel,
+                    OrganizationPublicModel,
                     r#"
                         SELECT org_id, parent_id, name, slug, status, settings, created_at, updated_at
                         FROM organizations
@@ -115,7 +115,7 @@ impl OrganizationsRepository for PgOrganizationsRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    OrganizationModel,
+                    OrganizationPublicModel,
                     r#"
                         SELECT org_id, parent_id, name, slug, status, settings, created_at, updated_at
                         FROM organizations
@@ -132,7 +132,7 @@ impl OrganizationsRepository for PgOrganizationsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<OrganizationModel> =
+        let items: Vec<OrganizationPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.org_id)
@@ -148,13 +148,13 @@ impl OrganizationsRepository for PgOrganizationsRepository {
         conn: &mut PgConnection,
         parent_id: Uuid,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<OrganizationModel>> {
+    ) -> HuxleyStoreResult<Page<OrganizationPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    OrganizationModel,
+                    OrganizationPublicModel,
                     r#"
                         SELECT org_id, parent_id, name, slug, status, settings, created_at, updated_at
                         FROM organizations
@@ -171,7 +171,7 @@ impl OrganizationsRepository for PgOrganizationsRepository {
             },
             PageSort::Desc => {
                 sqlx::query_as!(
-                    OrganizationModel,
+                    OrganizationPublicModel,
                     r#"
                         SELECT org_id, parent_id, name, slug, status, settings, created_at, updated_at
                         FROM organizations
@@ -189,7 +189,7 @@ impl OrganizationsRepository for PgOrganizationsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<OrganizationModel> =
+        let items: Vec<OrganizationPublicModel> =
             result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.org_id)
@@ -205,7 +205,7 @@ impl OrganizationsRepository for PgOrganizationsRepository {
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateOrganization,
-    ) -> HuxleyStoreResult<Option<OrganizationModel>> {
+    ) -> HuxleyStoreResult<Option<OrganizationPublicModel>> {
         let (set_parent_id, parent_id) = input.parent_id.into_parts();
         let (set_name, name) = input.name.into_parts();
         let (set_slug, slug) = input.slug.into_parts();
@@ -213,7 +213,7 @@ impl OrganizationsRepository for PgOrganizationsRepository {
         let (set_settings, settings) = input.settings.into_parts();
 
         let result = sqlx::query_as!(
-            OrganizationModel,
+            OrganizationPublicModel,
             r#"
                 UPDATE organizations
                 SET parent_id = CASE WHEN $2 THEN $3::uuid ELSE parent_id END,

@@ -6,7 +6,7 @@ use crate::{
     HuxleyStoreResult,
     commands::tag::{CreateTag, UpdateTag},
     common::{Page, PageQuery, PageSort},
-    models::tag::TagModel,
+    models::tag::TagPublicModel,
 };
 
 #[async_trait]
@@ -15,35 +15,35 @@ pub trait TagsRepository: Send + Sync {
         &self,
         conn: &mut PgConnection,
         input: CreateTag,
-    ) -> HuxleyStoreResult<TagModel>;
+    ) -> HuxleyStoreResult<TagPublicModel>;
     async fn find_by_id(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<TagModel>>;
+    ) -> HuxleyStoreResult<Option<TagPublicModel>>;
     async fn find_by_type_and_name(
         &self,
         conn: &mut PgConnection,
         tag_type: &str,
         name: &str,
-    ) -> HuxleyStoreResult<Option<TagModel>>;
+    ) -> HuxleyStoreResult<Option<TagPublicModel>>;
     async fn list(
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<TagModel>>;
+    ) -> HuxleyStoreResult<Page<TagPublicModel>>;
     async fn list_by_type(
         &self,
         conn: &mut PgConnection,
         tag_type: &str,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<TagModel>>;
+    ) -> HuxleyStoreResult<Page<TagPublicModel>>;
     async fn update(
         &self,
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateTag,
-    ) -> HuxleyStoreResult<Option<TagModel>>;
+    ) -> HuxleyStoreResult<Option<TagPublicModel>>;
     async fn delete(&self, conn: &mut PgConnection, id: Uuid) -> HuxleyStoreResult<bool>;
 }
 
@@ -55,9 +55,9 @@ impl TagsRepository for PgTagsRepository {
         &self,
         conn: &mut PgConnection,
         input: CreateTag,
-    ) -> HuxleyStoreResult<TagModel> {
+    ) -> HuxleyStoreResult<TagPublicModel> {
         let result = sqlx::query_as!(
-            TagModel,
+            TagPublicModel,
             r#"
                 INSERT INTO tags (tag_type, name, bg_color, text_color)
                 VALUES ($1, $2, $3, $4)
@@ -78,9 +78,9 @@ impl TagsRepository for PgTagsRepository {
         &self,
         conn: &mut PgConnection,
         id: Uuid,
-    ) -> HuxleyStoreResult<Option<TagModel>> {
+    ) -> HuxleyStoreResult<Option<TagPublicModel>> {
         let result = sqlx::query_as!(
-            TagModel,
+            TagPublicModel,
             r#"
                 SELECT tag_id, tag_type, name, bg_color, text_color, created_at, updated_at
                 FROM tags
@@ -99,9 +99,9 @@ impl TagsRepository for PgTagsRepository {
         conn: &mut PgConnection,
         tag_type: &str,
         name: &str,
-    ) -> HuxleyStoreResult<Option<TagModel>> {
+    ) -> HuxleyStoreResult<Option<TagPublicModel>> {
         let result = sqlx::query_as!(
-            TagModel,
+            TagPublicModel,
             r#"
                 SELECT tag_id, tag_type, name, bg_color, text_color, created_at, updated_at
                 FROM tags
@@ -120,13 +120,13 @@ impl TagsRepository for PgTagsRepository {
         &self,
         conn: &mut PgConnection,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<TagModel>> {
+    ) -> HuxleyStoreResult<Page<TagPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    TagModel,
+                    TagPublicModel,
                     r#"
                         SELECT tag_id, tag_type, name, bg_color, text_color, created_at, updated_at
                         FROM tags
@@ -142,7 +142,7 @@ impl TagsRepository for PgTagsRepository {
             }
             PageSort::Desc => {
                 sqlx::query_as!(
-                    TagModel,
+                    TagPublicModel,
                     r#"
                         SELECT tag_id, tag_type, name, bg_color, text_color, created_at, updated_at
                         FROM tags
@@ -159,7 +159,7 @@ impl TagsRepository for PgTagsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<TagModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<TagPublicModel> = result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.tag_id)
         } else {
@@ -174,13 +174,13 @@ impl TagsRepository for PgTagsRepository {
         conn: &mut PgConnection,
         tag_type: &str,
         page: PageQuery,
-    ) -> HuxleyStoreResult<Page<TagModel>> {
+    ) -> HuxleyStoreResult<Page<TagPublicModel>> {
         let resolved_limit = page.resolved_limit();
 
         let result = match page.resolved_sort() {
             PageSort::Asc => {
                 sqlx::query_as!(
-                    TagModel,
+                    TagPublicModel,
                     r#"
                         SELECT tag_id, tag_type, name, bg_color, text_color, created_at, updated_at
                         FROM tags
@@ -197,7 +197,7 @@ impl TagsRepository for PgTagsRepository {
             }
             PageSort::Desc => {
                 sqlx::query_as!(
-                    TagModel,
+                    TagPublicModel,
                     r#"
                         SELECT tag_id, tag_type, name, bg_color, text_color, created_at, updated_at
                         FROM tags
@@ -215,7 +215,7 @@ impl TagsRepository for PgTagsRepository {
         };
 
         let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<TagModel> = result.into_iter().take(resolved_limit as usize).collect();
+        let items: Vec<TagPublicModel> = result.into_iter().take(resolved_limit as usize).collect();
         let next_cursor = if has_more {
             items.last().map(|i| i.tag_id)
         } else {
@@ -230,13 +230,13 @@ impl TagsRepository for PgTagsRepository {
         conn: &mut PgConnection,
         id: Uuid,
         input: UpdateTag,
-    ) -> HuxleyStoreResult<Option<TagModel>> {
+    ) -> HuxleyStoreResult<Option<TagPublicModel>> {
         let (set_name, name) = input.name.into_parts();
         let (set_text_color, text_color) = input.text_color.into_parts();
         let (set_bg_color, bg_color) = input.bg_color.into_parts();
 
         let result = sqlx::query_as!(
-            TagModel,
+            TagPublicModel,
             r#"
                 UPDATE tags
                 SET name = CASE WHEN $2 THEN $3::text ELSE name END,
