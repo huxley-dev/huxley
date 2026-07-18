@@ -1,0 +1,61 @@
+{
+  "languages": {
+    "Markdown": {
+      "tab_size": 2,
+      "hard_tabs": false,
+      "format_on_save": "on",
+      "formatter": "prettier",
+    },
+    "TOML": {
+      "tab_size": 2,
+      "hard_tabs": false,
+      "formatter": "prettier",
+      "format_on_save": "off",
+    },
+    "YAML": {
+      "tab_size": 2,
+      "hard_tabs": true,
+      "format_on_save": "on",
+      "formatter": "prettier",
+    },
+    "JSON": {
+      "tab_size": 2,
+      "hard_tabs": true,
+      "preferred_line_length": 120,
+      "format_on_save": "on",
+      "formatter": "prettier",
+    },
+    "JavaScript": {
+      "tab_size": 2,
+      "hard_tabs": false,
+      "format_on_save": "on",
+      "formatter": "prettier",
+    },
+    "TypeScript": {
+      "tab_size": 2,
+      "hard_tabs": false,
+      "format_on_save": "on",
+      "formatter": "prettier",
+    },
+    "CSS": {
+      "tab_size": 2,
+      "hard_tabs": false,
+      "format_on_save": "on",
+      "formatter": "prettier",
+    },
+    "Svelte": {
+      "tab_size": 2,
+      "hard_tabs": false,
+      "format_on_save": "on",
+      "formatter": "prettier",
+    },
+    "Rust": {
+      "tab_size": 4,
+      "hard_tabs": false,
+      "format_on_save": "on",
+      "formatter": "language_server",
+      "remove_trailing_whitespace_on_save": false,
+      "ensure_final_newline_on_save": false,
+    }
+  },
+}
