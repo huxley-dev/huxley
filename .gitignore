@@ -240,3 +240,6 @@ ui/build
 
 # Python Virtual Environment
 .venv/
+
+# Zensical Build
+docsbuild/

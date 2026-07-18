@@ -1,11 +1,13 @@
 [project]
 site_name = "Huxley Documentation"
-site_description = "A new project generated from the default template project."
+site_description = "Documentation for the Huxley Automation Platform"
 site_author = "Huxley Development"
 site_url = "https://docs.huxley.dev/"
-copyright = """
-Copyright &copy; 2026 Huxley Development
-"""
+copyright = "Copyright &copy; Huxley Development"
+docs_dir = "docs"
+site_dir = "docsbuild"
+repo_url = "https://github.com/huxley-dev/huxley"
+use_directory_urls = true
 
 [project.theme]
 favicon = "assets/favicon.png"

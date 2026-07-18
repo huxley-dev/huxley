@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS credentials (
     value BYTEA NULL,
     inheritable BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    update_at TIMESTAMPTZ
+    updated_at TIMESTAMPTZ
 );
 
 -- ─── Triggers ───────────────────────────────────────────────────────────────
