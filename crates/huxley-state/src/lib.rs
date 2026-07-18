@@ -17,7 +17,6 @@ pub struct HuxleyState {
     pub app_settings_repo: Arc<dyn app_settings::AppSettingsRepository>,
     pub audit_logs_repo: Arc<dyn audit_logs::AuditLogsRepository>,
     pub auth_flows_repo: Arc<dyn auth_flows::AuthFlowsRepository>,
-    pub credentials_repo: ArC<dyn credentials::CredentialsRepository>,
     pub federated_identities_repo: Arc<dyn federated_identities::FederatedIdentitiesRepository>,
     pub folders_repo: Arc<dyn folders::FoldersRepository>,
     pub identity_providers_repo: Arc<dyn identity_providers::IdentityProvidersRepository>,
@@ -49,7 +48,6 @@ impl HuxleyState {
             app_settings_repo: Arc::new(app_settings::PgAppSettingsRepository),
             audit_logs_repo: Arc::new(audit_logs::PgAuditLogsRepository),
             auth_flows_repo: Arc::new(auth_flows::PgAuthFlowsRepository),
-            credentials_repo: Arc::new(credentials::PgCredentialsRepository),
             federated_identities_repo: Arc::new(
                 federated_identities::PgFederatedIdentitiesRepository,
             ),

@@ -4,7 +4,6 @@ pub mod app_role_perm;
 pub mod app_setting;
 pub mod audit_log;
 pub mod auth_flow;
-pub mod credential;
 pub mod federated_identity;
 pub mod folder;
 pub mod identity_provider;
