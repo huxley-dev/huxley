@@ -15,8 +15,7 @@ use huxley_store::{
 #[serde(rename_all = "camelCase")]
 pub struct CreateProjectRequest {
     pub project_type: String,
-    pub org_id: Option<Uuid>,
-    pub user_id: Option<Uuid>,
+    pub org_id: Uuid,
     pub name: String,
     pub slug: String,
     pub description: Option<String>,
@@ -43,8 +42,7 @@ pub struct UpdateProjectRequest {
 pub struct ProjectResponse {
     project_id: Uuid,
     project_type: String,
-    org_id: Option<Uuid>,
-    user_id: Option<Uuid>,
+    org_id: Uuid,
     name: String,
     slug: String,
     description: Option<String>,
@@ -59,7 +57,6 @@ impl TryFrom<CreateProjectRequest> for CreateProject {
         Ok(CreateProject {
             project_type: req.project_type,
             org_id: req.org_id,
-            user_id: req.user_id,
             name: req.name,
             slug: req.slug,
             description: req.description,
@@ -83,7 +80,6 @@ impl From<ProjectModel> for ProjectResponse {
             project_id: project.project_id,
             project_type: project.project_type,
             org_id: project.org_id,
-            user_id: project.user_id,
             name: project.name,
             slug: project.slug,
             description: project.description,

@@ -26,12 +26,6 @@ pub trait ProjectsRepository: Send + Sync {
         conn: &mut PgConnection,
         page: PageQuery,
     ) -> HuxleyStoreResult<Page<ProjectModel>>;
-    async fn list_by_user_id(
-        &self,
-        conn: &mut PgConnection,
-        user_id: Uuid,
-        page: PageQuery,
-    ) -> HuxleyStoreResult<Page<ProjectModel>>;
     async fn list_by_org_id(
         &self,
         conn: &mut PgConnection,
@@ -59,13 +53,12 @@ impl ProjectsRepository for PgProjectsRepository {
         let result = sqlx::query_as!(
             ProjectModel,
             r#"
-                INSERT INTO projects (project_type, org_id, user_id, name, slug, description)
-                VALUES ($1, $2, $3, $4, $5, $6)
-                RETURNING project_id, project_type, org_id, user_id, name, slug, description, created_at, updated_at
+                INSERT INTO projects (project_type, org_id, name, slug, description)
+                VALUES ($1, $2, $3, $4, $5)
+                RETURNING project_id, project_type, org_id, name, slug, description, created_at, updated_at
             "#,
             input.project_type,
             input.org_id,
-            input.user_id,
             input.name,
             input.slug,
             input.description,
@@ -84,7 +77,7 @@ impl ProjectsRepository for PgProjectsRepository {
         let result = sqlx::query_as!(
             ProjectModel,
             r#"
-                SELECT project_id, project_type, org_id, user_id, name, slug, description, created_at, updated_at
+                SELECT project_id, project_type, org_id, name, slug, description, created_at, updated_at
                 FROM projects
                 WHERE project_id = $1
             "#,
@@ -108,7 +101,7 @@ impl ProjectsRepository for PgProjectsRepository {
                 sqlx::query_as!(
                     ProjectModel,
                     r#"
-                        SELECT project_id, project_type, org_id, user_id, name, slug, description, created_at, updated_at
+                        SELECT project_id, project_type, org_id, name, slug, description, created_at, updated_at
                         FROM projects
                         WHERE ($2::uuid IS NULL OR project_id >= $2)
                         ORDER BY project_id ASC
@@ -124,7 +117,7 @@ impl ProjectsRepository for PgProjectsRepository {
                 sqlx::query_as!(
                     ProjectModel,
                     r#"
-                        SELECT project_id, project_type, org_id, user_id, name, slug, description, created_at, updated_at
+                        SELECT project_id, project_type, org_id, name, slug, description, created_at, updated_at
                         FROM projects
                         WHERE ($2::uuid IS NULL OR project_id <= $2)
                         ORDER BY project_id DESC
@@ -132,62 +125,6 @@ impl ProjectsRepository for PgProjectsRepository {
                     "#,
                     resolved_limit,
                     page.next_cursor,
-                )
-                .fetch_all(conn)
-                .await?
-            }
-        };
-
-        let has_more = result.len() as i32 > resolved_limit;
-        let items: Vec<ProjectModel> = result.into_iter().take(resolved_limit as usize).collect();
-        let next_cursor = if has_more {
-            items.last().map(|i| i.project_id)
-        } else {
-            None
-        };
-
-        Ok(Page { items, next_cursor })
-    }
-
-    async fn list_by_user_id(
-        &self,
-        conn: &mut PgConnection,
-        user_id: Uuid,
-        page: PageQuery,
-    ) -> HuxleyStoreResult<Page<ProjectModel>> {
-        let resolved_limit = page.resolved_limit();
-
-        let result = match page.resolved_sort() {
-            PageSort::Asc => {
-                sqlx::query_as!(
-                    ProjectModel,
-                    r#"
-                        SELECT project_id, project_type, org_id, user_id, name, slug, description, created_at, updated_at
-                        FROM projects
-                        WHERE ($2::uuid IS NULL OR project_id >= $2) AND (user_id = $3)
-                        ORDER BY project_id ASC
-                        LIMIT $1 + 1
-                    "#,
-                    resolved_limit,
-                    page.next_cursor,
-                    user_id,
-                )
-                .fetch_all(conn)
-                .await?
-            },
-            PageSort::Desc => {
-                sqlx::query_as!(
-                    ProjectModel,
-                    r#"
-                        SELECT project_id, project_type, org_id, user_id, name, slug, description, created_at, updated_at
-                        FROM projects
-                        WHERE ($2::uuid IS NULL OR project_id <= $2) AND (user_id = $3)
-                        ORDER BY project_id DESC
-                        LIMIT $1 + 1
-                    "#,
-                    resolved_limit,
-                    page.next_cursor,
-                    user_id,
                 )
                 .fetch_all(conn)
                 .await?
@@ -218,7 +155,7 @@ impl ProjectsRepository for PgProjectsRepository {
                 sqlx::query_as!(
                     ProjectModel,
                     r#"
-                        SELECT project_id, project_type, org_id, user_id, name, slug, description, created_at, updated_at
+                        SELECT project_id, project_type, org_id, name, slug, description, created_at, updated_at
                         FROM projects
                         WHERE ($2::uuid IS NULL OR project_id >= $2) AND (org_id = $3)
                         ORDER BY project_id ASC
@@ -235,7 +172,7 @@ impl ProjectsRepository for PgProjectsRepository {
                 sqlx::query_as!(
                     ProjectModel,
                     r#"
-                        SELECT project_id, project_type, org_id, user_id, name, slug, description, created_at, updated_at
+                        SELECT project_id, project_type, org_id, name, slug, description, created_at, updated_at
                         FROM projects
                         WHERE ($2::uuid IS NULL OR project_id <= $2) AND (org_id = $3)
                         ORDER BY project_id DESC
@@ -279,7 +216,7 @@ impl ProjectsRepository for PgProjectsRepository {
                     slug = CASE WHEN $4 THEN $5::text ELSE slug END,
                     description = CASE WHEN $6 THEN $7::text ELSE description END
                 WHERE project_id = $1
-                RETURNING project_id, project_type, org_id, user_id, name, slug, description, created_at, updated_at
+                RETURNING project_id, project_type, org_id, name, slug, description, created_at, updated_at
             "#,
             id,
             set_name,

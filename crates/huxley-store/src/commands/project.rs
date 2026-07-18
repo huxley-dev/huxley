@@ -4,8 +4,7 @@ use crate::common::Field;
 
 pub struct CreateProject {
     pub project_type: String,
-    pub org_id: Option<Uuid>,
-    pub user_id: Option<Uuid>,
+    pub org_id: Uuid,
     pub name: String,
     pub slug: String,
     pub description: Option<String>,
